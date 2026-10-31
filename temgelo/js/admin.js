@@ -1,6 +1,6 @@
 // Tem Gelo? – Admin logic
 
-const ADMIN_PASSWORD = "gelo2026"; // Change this!
+const ADMIN_PASSWORD = "EuRico2027"; // Change this!
 const CATALOG_URL = "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
 const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish"; // Will be your Worker URL later, e.g. https://tem-gelo-worker.xxx.workers.dev/publish
 
