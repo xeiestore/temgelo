@@ -1,5 +1,5 @@
 // Tem Gelo? – Service Worker (basic offline shell)
-const CACHE_NAME = "temgelo-v2";
+const CACHE_NAME = "temgelo-v3";
 const ASSETS = [
   "./",
   "./admin",
@@ -29,26 +29,40 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Always try network first for the live catalog
-  if (url.pathname.includes("catalog.json") || url.hostname.includes("cloudinary")) {
-    event.respondWith(
-      fetch(event.request)
-        .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return res;
-        })
-        .catch(() => caches.match(event.request))
-    );
+  // Never intercept non-GET (e.g. POST to Worker /publish) — let the browser handle CORS
+  if (event.request.method !== "GET") {
     return;
   }
 
-  // Navigations (map / admin): network first so Cloudflare 308 redirects work
+  // Cross-origin: only handle known CDN assets we precache; everything else pass through
+  if (url.origin !== self.location.origin) {
+    if (url.hostname.includes("cloudinary") || url.pathname.includes("catalog.json")) {
+      event.respondWith(
+        fetch(event.request)
+          .then((res) => {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            return res;
+          })
+          .catch(() => caches.match(event.request))
+      );
+    }
+    // unpkg / other CDNs: cache-first if we have it, else network (no respondWith required if we want pass-through)
+    // Still allow offline Leaflet
+    if (url.hostname.includes("unpkg.com")) {
+      event.respondWith(
+        caches.match(event.request).then((cached) => cached || fetch(event.request))
+      );
+    }
+    return;
+  }
+
+  // Same-origin navigations: network first (Cloudflare clean URLs / 308)
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((res) => {
-          if (res.ok && url.origin === self.location.origin) {
+          if (res.ok) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
@@ -59,14 +73,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache first, then network
+  // Same-origin static assets: cache first, then network
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
         cached ||
         fetch(event.request)
           .then((res) => {
-            if (event.request.method === "GET" && res.ok && url.origin === self.location.origin) {
+            if (res.ok) {
               const clone = res.clone();
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
             }

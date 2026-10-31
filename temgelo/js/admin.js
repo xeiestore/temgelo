@@ -340,12 +340,25 @@ async function publishCatalog() {
         catalog
       })
     });
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error((detail || res.statusText || "HTTP " + res.status).slice(0, 200));
+    }
     document.getElementById("catalog-status").textContent =
       "Publicado com sucesso! " + new Date().toLocaleString("pt-AO");
     alert("Publicado! O mapa público já deve mostrar as alterações.");
   } catch (err) {
-    alert("Erro ao publicar: " + err.message);
+    const msg = err && err.message ? err.message : String(err);
+    if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+      alert(
+        "Erro de rede ao publicar (Failed to fetch).\n\n" +
+          "1) Confirme que o Worker está online.\n" +
+          "2) Actualize o service worker (limpe dados do site ou hard-refresh).\n" +
+          "3) Confirme que ADMIN_PASSWORD em admin.js = secret do Worker."
+      );
+    } else {
+      alert("Erro ao publicar: " + msg);
+    }
   }
 }
 
