@@ -4,13 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
   <title>Admin – Tem Gelo?</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="admin-body">
   <!-- Login screen -->
   <div id="login-screen" class="login-box">
-    <h2>Tem <span style="color:#22c55e">Gelo?</span> Admin</h2>
+    <div style="text-align:center;margin-bottom:16px">
+      <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="48" style="height:48px;width:auto;" />
+    </div>
+    <h2 style="text-align:center;margin-bottom:8px">Admin</h2>
     <input type="password" id="admin-password" placeholder="Palavra-passe" autocomplete="current-password" />
     <button class="btn btn-primary" type="button" onclick="tryLogin()">Entrar</button>
     <p class="text-sm text-muted mt-2" style="text-align:center">
@@ -21,7 +29,10 @@
   <!-- Main admin -->
   <div id="admin-screen" class="hidden">
     <div class="admin-header">
-      <h1>Tem <span>Gelo?</span> Admin</h1>
+      <h1 style="display:flex;align-items:center;gap:10px">
+        <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="36" style="height:36px;width:auto;" />
+        <span>Admin</span>
+      </h1>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" type="button" onclick="logout()">Sair</button>
         <a class="btn btn-ghost" href="index.html" target="_blank">Ver mapa</a>
