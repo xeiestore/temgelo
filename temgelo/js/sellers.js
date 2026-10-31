@@ -83,8 +83,8 @@ const FREEZE_LABELS = {
 
 // Default site texts (overridden by catalog.texts when published)
 const DEFAULT_TEXTS = {
-  pageTitle: "Tem Gelo? – Luanda",
-  pageDescription: "Tem Gelo? Encontre baldes de gelo perto de si em Luanda.",
+  pageTitle: "Tem Gelo? – Angola",
+  pageDescription: "Tem Gelo? Encontre baldes de gelo perto de si em Angola.",
   legendOk: "Tem gelo",
   legendNo: "Sem gelo / expirado",
   safetyTitle: "Atenção de Segurança:",

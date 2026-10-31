@@ -1,7 +1,7 @@
 {
   "name": "Tem Gelo?",
   "short_name": "Tem Gelo?",
-  "description": "Encontre baldes de gelo perto de si em Luanda",
+  "description": "Encontre baldes de gelo perto de si em Angola",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0f172a",

@@ -18,7 +18,7 @@ function initMap() {
   map = L.map("map", {
     zoomControl: false,
     attributionControl: true
-  }).setView([-8.8383, 13.2344], 12);
+  }).setView([-11.2, 17.5], 6);
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
@@ -49,7 +49,21 @@ async function loadCatalog() {
   }
   applyTexts();
   renderMarkers();
+  fitToSellers();
   updateCount();
+}
+
+function fitToSellers() {
+  if (!map || !sellers.length) return;
+  const points = sellers
+    .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng))
+    .map((s) => [s.lat, s.lng]);
+  if (!points.length) return;
+  if (points.length === 1) {
+    map.setView(points[0], 13);
+  } else {
+    map.fitBounds(points, { padding: [40, 40], maxZoom: 14 });
+  }
 }
 
 function applyTexts() {

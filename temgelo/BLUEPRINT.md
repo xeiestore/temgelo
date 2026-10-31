@@ -1,6 +1,6 @@
 # Tem Gelo? – Blueprint
 
-App for people in Luanda to find ice buckets near them.
+App for people in Angola to find ice buckets near them.
 
 **Live:** https://temgelo.pages.dev
 
@@ -59,7 +59,7 @@ Shape:
     }
   ],
   "texts": {
-    "pageTitle": "Tem Gelo? – Luanda",
+    "pageTitle": "Tem Gelo? – Angola",
     "safetyTitle": "Atenção de Segurança:",
     "safetyBody": "...",
     "legendOk": "Tem gelo",
