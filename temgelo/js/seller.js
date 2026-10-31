@@ -3,7 +3,24 @@
 const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
 const TOKEN_KEY = "temgelo_seller_token";
 
-let token = localStorage.getItem(TOKEN_KEY) || null;
+function readToken() {
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
+}
+function writeToken(value, stay) {
+  if (stay) {
+    localStorage.setItem(TOKEN_KEY, value);
+    sessionStorage.removeItem(TOKEN_KEY);
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, value);
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+let token = readToken();
 let me = null;
 let regMap = null;
 let regMarker = null;
@@ -14,6 +31,7 @@ let dashMarker = null;
 document.addEventListener("DOMContentLoaded", () => {
   setupDrawer();
   setupAuthTabs();
+  setupPasswordToggles();
   document.getElementById("btn-login")?.addEventListener("click", doLogin);
   document.getElementById("btn-register")?.addEventListener("click", doRegister);
   document.getElementById("btn-save-stock")?.addEventListener("click", () => saveMe("stock"));
@@ -32,6 +50,23 @@ document.addEventListener("DOMContentLoaded", () => {
     initRegMap();
   }
 });
+
+function setupPasswordToggles() {
+  document.querySelectorAll(".password-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.getAttribute("data-target"));
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.querySelector(".icon-eye")?.classList.toggle("hidden", show);
+      btn.querySelector(".icon-eye-off")?.classList.toggle("hidden", !show);
+      btn.setAttribute(
+        "aria-label",
+        show ? "Ocultar palavra-passe" : "Mostrar palavra-passe"
+      );
+    });
+  });
+}
 
 // ---------- Drawer / hamburger ----------
 function setupDrawer() {
@@ -68,18 +103,22 @@ function setupDrawer() {
 function renderDrawerNav() {
   const nav = document.getElementById("drawer-nav");
   if (!nav) return;
+  const iconStock = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1 0-2 1-2 2v16c0 1 1 2 2 2h16c1 0 2-1 2-2V4c0-1-1-2-2-2zM9 4h2v5l-1-.75L9 9V4zm11 16H4V4h3v9l3-2.25L13 13V4h7v16z"/></svg>';
+  const iconUser = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+  const iconMap = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>';
+  const iconLogout = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>';
   if (me) {
     nav.innerHTML = `
-      <a href="#" class="drawer-link" data-action="stock">🧊 Meu stock</a>
-      <a href="#" class="drawer-link" data-action="profile">👤 Perfil</a>
-      <a href="./" class="drawer-link">🗺️ Ver mapa público</a>
-      <a href="#" class="drawer-link drawer-link-danger" data-action="logout">Sair</a>
+      <a href="#" class="drawer-link" data-action="stock">${iconStock} Meu stock</a>
+      <a href="#" class="drawer-link" data-action="profile">${iconUser} Perfil</a>
+      <a href="./" class="drawer-link">${iconMap} Ver mapa público</a>
+      <a href="#" class="drawer-link drawer-link-danger" data-action="logout">${iconLogout} Sair</a>
     `;
   } else {
     nav.innerHTML = `
       <a href="#" class="drawer-link" data-action="login">Entrar</a>
       <a href="#" class="drawer-link" data-action="register">Criar conta</a>
-      <a href="./" class="drawer-link">🗺️ Ver mapa público</a>
+      <a href="./" class="drawer-link">${iconMap} Ver mapa público</a>
     `;
   }
   nav.querySelectorAll("[data-action]").forEach((el) => {
@@ -169,7 +208,8 @@ async function doLogin() {
       body: JSON.stringify({ whatsapp, password })
     });
     token = data.token;
-    localStorage.setItem(TOKEN_KEY, token);
+    const stay = document.getElementById("login-stay")?.checked !== false;
+    writeToken(token, stay);
     me = data.seller;
     showDash();
   } catch (err) {
@@ -217,7 +257,7 @@ async function doLogout() {
   } catch (_) {}
   token = null;
   me = null;
-  localStorage.removeItem(TOKEN_KEY);
+  clearToken();
   showAuth();
   switchTab("login");
 }
@@ -229,7 +269,7 @@ async function loadMe() {
     showDash();
   } catch {
     token = null;
-    localStorage.removeItem(TOKEN_KEY);
+    clearToken();
     showAuth();
     initRegMap();
   }
@@ -253,13 +293,13 @@ function fillDash() {
   if (me.status === "pending") {
     banner.classList.add("pending");
     banner.textContent =
-      "⏳ Conta pendente de aprovação. Ainda não aparece no mapa público.";
+      "Conta pendente de aprovação. Ainda não aparece no mapa público.";
   } else if (me.status === "approved") {
     banner.classList.add("approved");
-    banner.textContent = "✅ Conta aprovada – visível no mapa (se tiver stock fresco).";
+    banner.textContent = "Conta aprovada – visível no mapa (se tiver stock fresco).";
   } else if (me.status === "banned") {
     banner.classList.add("banned");
-    banner.textContent = "🚫 Conta bloqueada. Contacte o administrador.";
+    banner.textContent = "Conta bloqueada. Contacte o administrador.";
   } else {
     banner.textContent = "";
   }

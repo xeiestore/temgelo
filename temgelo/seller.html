@@ -16,13 +16,13 @@
 <body class="seller-body">
   <!-- Top bar -->
   <header class="seller-topbar">
+    <button type="button" class="hamburger-btn" id="hamburger-btn" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
     <a href="./" class="logo" aria-label="Tem Gelo?">
       <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="36" />
     </a>
     <span class="seller-topbar-title" id="topbar-title">Vendedor</span>
-    <button type="button" class="hamburger-btn" id="hamburger-btn" aria-label="Menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
   </header>
 
   <!-- Hamburger drawer -->
@@ -54,8 +54,18 @@
           </div>
           <div class="form-group">
             <label>Palavra-passe</label>
-            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+            <div class="password-field">
+              <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" class="password-toggle" data-target="login-password" aria-label="Mostrar palavra-passe" title="Mostrar / ocultar">
+                <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+                <svg class="icon-eye-off hidden" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 4.27 3.28 3 21 20.72 19.73 22l-2.2-2.2C15.9 20.56 14 21 12 21 5 21 2 14 2 14a18.5 18.5 0 0 1 5.06-6.28L2 4.27zM12 7a5 5 0 0 1 5 5c0 .7-.15 1.36-.4 1.96l-1.57-1.57A3 3 0 0 0 12 9a3 3 0 0 0-2.39 1.19L7.96 8.54A4.96 4.96 0 0 1 12 7zm0 12c2.04 0 3.87-.53 5.4-1.34l-1.55-1.55c-.96.55-2.1.89-3.85.89a5 5 0 0 1-5-5c0-.45.07-.88.18-1.29L5.1 9.63A16.1 16.1 0 0 0 4.05 14S7 19 12 19z"/></svg>
+              </button>
+            </div>
           </div>
+          <label class="checkbox-row stay-row">
+            <input type="checkbox" id="login-stay" checked />
+            <span>Manter sessão iniciada</span>
+          </label>
           <button class="btn btn-primary btn-block" type="button" id="btn-login">Entrar</button>
         </div>
 
@@ -75,7 +85,13 @@
           </div>
           <div class="form-group">
             <label>Palavra-passe (mín. 6 caracteres)</label>
-            <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" />
+            <div class="password-field">
+              <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" />
+              <button type="button" class="password-toggle" data-target="reg-password" aria-label="Mostrar palavra-passe" title="Mostrar / ocultar">
+                <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+                <svg class="icon-eye-off hidden" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 4.27 3.28 3 21 20.72 19.73 22l-2.2-2.2C15.9 20.56 14 21 12 21 5 21 2 14 2 14a18.5 18.5 0 0 1 5.06-6.28L2 4.27zM12 7a5 5 0 0 1 5 5c0 .7-.15 1.36-.4 1.96l-1.57-1.57A3 3 0 0 0 12 9a3 3 0 0 0-2.39 1.19L7.96 8.54A4.96 4.96 0 0 1 12 7zm0 12c2.04 0 3.87-.53 5.4-1.34l-1.55-1.55c-.96.55-2.1.89-3.85.89a5 5 0 0 1-5-5c0-.45.07-.88.18-1.29L5.1 9.63A16.1 16.1 0 0 0 4.05 14S7 19 12 19z"/></svg>
+              </button>
+            </div>
           </div>
           <div class="form-group">
             <label>Bairro / zona</label>
@@ -95,7 +111,7 @@
                 <input type="number" id="reg-lng" step="any" />
               </div>
             </div>
-            <button class="btn btn-ghost btn-sm" type="button" id="btn-reg-gps">📍 Usar a minha localização</button>
+            <button class="btn btn-ghost btn-sm" type="button" id="btn-reg-gps"><svg class="btn-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg> Usar a minha localização</button>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -183,7 +199,7 @@
               <input type="number" id="dash-lng" step="any" />
             </div>
           </div>
-          <button class="btn btn-ghost btn-sm" type="button" id="btn-dash-gps">📍 Usar a minha localização</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="btn-dash-gps"><svg class="btn-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg> Usar a minha localização</button>
         </div>
         <button class="btn btn-primary btn-block" type="button" id="btn-save-profile">Guardar perfil</button>
       </div>

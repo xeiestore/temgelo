@@ -27,13 +27,13 @@
 
   <!-- Top bar -->
   <div class="topbar">
+    <button type="button" class="hamburger-btn topbar-hamburger" id="public-hamburger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
     <a href="./" class="logo" aria-label="Tem Gelo?">
       <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="40" style="height:40px;width:auto;display:block;" />
     </a>
     <div class="badge" id="seller-count">— vendedores</div>
-    <button type="button" class="hamburger-btn topbar-hamburger" id="public-hamburger" aria-label="Menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
   </div>
 
   <!-- Public drawer -->
@@ -44,9 +44,14 @@
       <button type="button" class="drawer-close" id="public-drawer-close" aria-label="Fechar">×</button>
     </div>
     <div class="drawer-nav">
-      <a href="seller.html" class="drawer-link">🧊 Sou vendedor</a>
-      <a href="seller.html" class="drawer-link">Entrar / Criar conta</a>
-      <a href="#safety-banner" class="drawer-link" id="link-safety">⚠️ Segurança</a>
+      <a href="seller.html" class="drawer-link">
+        <svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        Área do vendedor
+      </a>
+      <a href="#safety-banner" class="drawer-link" id="link-safety">
+        <svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        Segurança
+      </a>
     </div>
   </nav>
 

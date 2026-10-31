@@ -34,12 +34,14 @@ const TEXT_FIELDS = [
 
 // ---------- Boot ----------
 document.addEventListener("DOMContentLoaded", () => {
-  // Check if already logged in this session
-  if (sessionStorage.getItem("temgelo_admin") === "1") {
+  // Stay logged in by default (localStorage); otherwise sessionStorage
+  if (
+    localStorage.getItem("temgelo_admin") === "1" ||
+    sessionStorage.getItem("temgelo_admin") === "1"
+  ) {
     showAdmin();
   }
 
-  // Enter key on password
   document.getElementById("admin-password")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") tryLogin();
   });
@@ -48,7 +50,14 @@ document.addEventListener("DOMContentLoaded", () => {
 function tryLogin() {
   const pw = document.getElementById("admin-password").value;
   if (pw === ADMIN_PASSWORD) {
-    sessionStorage.setItem("temgelo_admin", "1");
+    const stay = document.getElementById("admin-stay")?.checked !== false;
+    if (stay) {
+      localStorage.setItem("temgelo_admin", "1");
+      sessionStorage.removeItem("temgelo_admin");
+    } else {
+      sessionStorage.setItem("temgelo_admin", "1");
+      localStorage.removeItem("temgelo_admin");
+    }
     showAdmin();
   } else {
     alert("Palavra-passe incorrecta");
@@ -57,6 +66,7 @@ function tryLogin() {
 
 function logout() {
   sessionStorage.removeItem("temgelo_admin");
+  localStorage.removeItem("temgelo_admin");
   document.getElementById("login-screen").classList.remove("hidden");
   document.getElementById("admin-screen").classList.add("hidden");
 }
@@ -170,9 +180,9 @@ function renderList() {
             </div>
           </div>
           <div class="actions">
-            <button type="button" title="Editar" onclick="editSeller('${s.id}')">✎</button>
-            <button type="button" title="Reconfirmar (24h)" onclick="reconfirm('${s.id}')">↻</button>
-            <button type="button" title="Apagar" onclick="deleteSeller('${s.id}')">🗑</button>
+            <button type="button" title="Editar" onclick="editSeller('${s.id}')" aria-label="Editar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+            <button type="button" title="Reconfirmar (24h)" onclick="reconfirm('${s.id}')" aria-label="Reconfirmar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg></button>
+            <button type="button" title="Apagar" onclick="deleteSeller('${s.id}')" aria-label="Apagar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
         </div>
       `;
@@ -414,15 +424,15 @@ async function loadAccounts() {
           <div class="actions">
             ${
               st !== "approved"
-                ? `<button type="button" title="Aprovar" onclick="moderateAccount('${s.id}','approve')">✓</button>`
+                ? `<button type="button" title="Aprovar" onclick="moderateAccount('${s.id}','approve')" aria-label="Aprovar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></button>`
                 : ""
             }
             ${
               st !== "banned"
-                ? `<button type="button" title="Bloquear" onclick="moderateAccount('${s.id}','ban')">🚫</button>`
+                ? `<button type="button" title="Bloquear" onclick="moderateAccount('${s.id}','ban')" aria-label="Bloquear"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.92 7.92 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.92 7.92 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></button>`
                 : ""
             }
-            <button type="button" title="Apagar" onclick="moderateAccount('${s.id}','delete')">🗑</button>
+            <button type="button" title="Apagar" onclick="moderateAccount('${s.id}','delete')" aria-label="Apagar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
         </div>`;
       })

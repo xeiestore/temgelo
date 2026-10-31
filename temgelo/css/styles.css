@@ -74,6 +74,7 @@ html, body {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid #334155;
+  margin-left: auto;
 }
 
 /* Safety banner */
@@ -565,19 +566,31 @@ html, body {
   margin-bottom: 20px;
 }
 
-.login-box input {
+.login-box input[type="password"],
+.login-box input[type="text"],
+.login-box .password-field input {
   width: 100%;
   padding: 12px;
-  margin-bottom: 14px;
   border-radius: 8px;
   border: 1px solid #475569;
   background: #0f172a;
   color: white;
   font-size: 16px;
 }
-
-.login-box button {
+.login-box .password-field {
+  margin-bottom: 8px;
+}
+.login-box .password-field input {
+  margin-bottom: 0;
+  padding-right: 44px;
+}
+.login-box > .btn,
+.login-box > button.btn {
   width: 100%;
+}
+.login-box .password-toggle {
+  /* not full-width */
+  width: 36px;
 }
 
 /* Modal */
@@ -652,7 +665,8 @@ html, body {
   border: 1px solid #334155;
   border-radius: 10px;
   cursor: pointer;
-  margin-left: auto;
+  margin-left: 0;
+  margin-right: 0;
   flex-shrink: 0;
 }
 .hamburger-btn span {
@@ -676,16 +690,16 @@ html, body {
 .drawer {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   bottom: 0;
   z-index: 2001;
   width: min(300px, 88vw);
   background: #0b1220;
-  border-left: 1px solid #1e293b;
+  border-right: 1px solid #1e293b;
   display: flex;
   flex-direction: column;
   padding: calc(12px + var(--safe-top)) 0 calc(16px + var(--safe-bottom));
-  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.4);
 }
 .drawer-header {
   display: flex;
@@ -868,4 +882,89 @@ html, body {
 .status-pill.banned {
   background: rgba(239, 68, 68, 0.2);
   color: #f87171;
+}
+
+/* ========== Password field + toggle ========== */
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-field input {
+  width: 100%;
+  padding-right: 44px;
+}
+.password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0;
+}
+.password-toggle:hover {
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.12);
+}
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.password-toggle .hidden {
+  display: none !important;
+}
+.stay-row {
+  margin: 10px 0 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Drawer / sidebar icons */
+.drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.drawer-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+.sidebar-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+}
+.action-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.seller-item .actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-inline-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 4px;
 }

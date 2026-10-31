@@ -19,7 +19,17 @@
       <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="48" style="height:48px;width:auto;" />
     </div>
     <h2 style="text-align:center;margin-bottom:8px">Admin</h2>
-    <input type="password" id="admin-password" placeholder="Palavra-passe" autocomplete="current-password" />
+    <div class="password-field">
+      <input type="password" id="admin-password" placeholder="Palavra-passe" autocomplete="current-password" />
+      <button type="button" class="password-toggle" data-target="admin-password" aria-label="Mostrar palavra-passe" title="Mostrar / ocultar">
+        <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+        <svg class="icon-eye-off hidden" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 4.27 3.28 3 21 20.72 19.73 22l-2.2-2.2C15.9 20.56 14 21 12 21 5 21 2 14 2 14a18.5 18.5 0 0 1 5.06-6.28L2 4.27zM12 7a5 5 0 0 1 5 5c0 .7-.15 1.36-.4 1.96l-1.57-1.57A3 3 0 0 0 12 9a3 3 0 0 0-2.39 1.19L7.96 8.54A4.96 4.96 0 0 1 12 7zm0 12c2.04 0 3.87-.53 5.4-1.34l-1.55-1.55c-.96.55-2.1.89-3.85.89a5 5 0 0 1-5-5c0-.45.07-.88.18-1.29L5.1 9.63A16.1 16.1 0 0 0 4.05 14S7 19 12 19z"/></svg>
+      </button>
+    </div>
+    <label class="checkbox-row stay-row">
+      <input type="checkbox" id="admin-stay" checked />
+      <span>Manter sessão iniciada</span>
+    </label>
     <button class="btn btn-primary" type="button" onclick="tryLogin()">Entrar</button>
     <p class="text-sm text-muted mt-2" style="text-align:center">
       Só o administrador pode gerir os vendedores.
@@ -37,19 +47,19 @@
 
       <nav class="sidebar-nav">
         <button type="button" class="sidebar-link active" data-section="sellers" onclick="showSection('sellers')">
-          <span class="sidebar-icon">🧊</span>
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M21 16.5c0 .83-.67 1.5-1.5 1.5h-15c-.83 0-1.5-.67-1.5-1.5v-9c0-.83.67-1.5 1.5-1.5H7l2-2h6l2 2h2.5c.83 0 1.5.67 1.5 1.5v9zM12 18a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0-2a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></span>
           <span class="sidebar-label">Vendedores</span>
         </button>
         <button type="button" class="sidebar-link" data-section="moderation" onclick="showSection('moderation'); loadAccounts()">
-          <span class="sidebar-icon">✅</span>
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></span>
           <span class="sidebar-label">Moderação</span>
         </button>
         <button type="button" class="sidebar-link" data-section="texts" onclick="showSection('texts')">
-          <span class="sidebar-icon">✏️</span>
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
           <span class="sidebar-label">Textos</span>
         </button>
         <button type="button" class="sidebar-link" data-section="catalog" onclick="showSection('catalog')">
-          <span class="sidebar-icon">📋</span>
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
           <span class="sidebar-label">Catálogo</span>
         </button>
       </nav>
@@ -288,5 +298,18 @@
 
   <script src="js/sellers.js"></script>
   <script src="js/admin.js"></script>
+  <script>
+    document.querySelectorAll(".password-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById(btn.getAttribute("data-target"));
+        if (!input) return;
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        btn.querySelector(".icon-eye")?.classList.toggle("hidden", show);
+        btn.querySelector(".icon-eye-off")?.classList.toggle("hidden", !show);
+        btn.setAttribute("aria-label", show ? "Ocultar palavra-passe" : "Mostrar palavra-passe");
+      });
+    });
+  </script>
 </body>
 </html>
