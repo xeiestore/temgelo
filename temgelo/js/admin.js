@@ -371,3 +371,104 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+
+// ---------- Accounts moderation (seller self-registration) ----------
+const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
+
+async function loadAccounts() {
+  const container = document.getElementById("accounts-list");
+  if (!container) return;
+  container.innerHTML = `<p class="text-muted text-sm">A carregar contas…</p>`;
+  try {
+    const res = await fetch(
+      API_BASE + "/admin/sellers?password=" + encodeURIComponent(ADMIN_PASSWORD),
+      { cache: "no-store" }
+    );
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const list = data.sellers || [];
+    if (!list.length) {
+      container.innerHTML = `<p class="text-muted text-sm">Nenhuma conta registada ainda.</p>`;
+      return;
+    }
+    // pending first
+    list.sort((a, b) => {
+      const order = { pending: 0, approved: 1, banned: 2 };
+      return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+    });
+    container.innerHTML = list
+      .map((s) => {
+        const st = s.status || "pending";
+        const label =
+          st === "approved" ? "Aprovado" : st === "banned" ? "Bloqueado" : "Pendente";
+        return `
+        <div class="seller-item">
+          <div class="info">
+            <div class="name">${escapeHtml(s.name)}</div>
+            <div class="meta">
+              ${escapeHtml(s.neighborhood || "")} · ${escapeHtml(s.whatsapp || "")}
+              · ${s.buckets ?? 0} baldes
+              <span class="status-pill ${st}">${label}</span>
+            </div>
+          </div>
+          <div class="actions">
+            ${
+              st !== "approved"
+                ? `<button type="button" title="Aprovar" onclick="moderateAccount('${s.id}','approve')">✓</button>`
+                : ""
+            }
+            ${
+              st !== "banned"
+                ? `<button type="button" title="Bloquear" onclick="moderateAccount('${s.id}','ban')">🚫</button>`
+                : ""
+            }
+            <button type="button" title="Apagar" onclick="moderateAccount('${s.id}','delete')">🗑</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<p class="text-muted text-sm">Erro: ${escapeHtml(err.message)}. Confirme o Worker e o KV.</p>`;
+  }
+}
+
+async function moderateAccount(sellerId, action) {
+  const labels = { approve: "aprovar", ban: "bloquear", delete: "apagar" };
+  if (!confirm("Tem a certeza que quer " + (labels[action] || action) + " esta conta?")) return;
+  try {
+    const res = await fetch(API_BASE + "/admin/moderate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: ADMIN_PASSWORD,
+        sellerId,
+        action
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadAccounts();
+    alert("Feito.");
+  } catch (err) {
+    alert("Erro: " + err.message);
+  }
+}
+
+async function republishFromAccounts() {
+  try {
+    const res = await fetch(API_BASE + "/admin/republish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: ADMIN_PASSWORD,
+        texts: readTextsForm ? readTextsForm() : texts
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    document.getElementById("catalog-status").textContent =
+      "Republicado a partir das contas (" + (data.count ?? "?") + " aprovados).";
+    alert("Catálogo público actualizado.");
+  } catch (err) {
+    alert("Erro: " + err.message);
+  }
+}

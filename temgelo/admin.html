@@ -40,6 +40,10 @@
           <span class="sidebar-icon">🧊</span>
           <span class="sidebar-label">Vendedores</span>
         </button>
+        <button type="button" class="sidebar-link" data-section="moderation" onclick="showSection('moderation'); loadAccounts()">
+          <span class="sidebar-icon">✅</span>
+          <span class="sidebar-label">Moderação</span>
+        </button>
         <button type="button" class="sidebar-link" data-section="texts" onclick="showSection('texts')">
           <span class="sidebar-icon">✏️</span>
           <span class="sidebar-label">Textos</span>
@@ -181,6 +185,20 @@
         </div>
       </section>
 
+      <section id="section-moderation" class="admin-section hidden">
+        <div class="card">
+          <h3>
+            Contas de vendedores
+            <button class="btn btn-ghost" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="loadAccounts()">Actualizar</button>
+          </h3>
+          <p class="text-sm text-muted mb-2">
+            Contas criadas em <code>seller.html</code>. Aprove para aparecerem no mapa.
+            Pendentes não são públicos.
+          </p>
+          <div id="accounts-list" class="seller-list"></div>
+        </div>
+      </section>
+
       <section id="section-catalog" class="admin-section hidden">
         <div class="card">
           <h3>Estado do catálogo</h3>
@@ -189,6 +207,9 @@
             Depois de editar, clique em <strong>Publicar</strong> para enviar para o Cloudinary.
             O mapa público vai mostrar as alterações em poucos segundos.
           </p>
+          <button class="btn btn-primary mt-2" type="button" onclick="republishFromAccounts()">
+            Republicar a partir das contas aprovadas
+          </button>
         </div>
       </section>
     </main>

@@ -8,116 +8,116 @@ App for people in Angola to find ice buckets near them.
 - HTML / CSS / JS (no framework)
 - Leaflet + OpenStreetMap
 - Cloudflare Pages (public site)
-- Cloudflare Worker (publish endpoint)
-- Cloudinary (catalog.json as raw file)
-- localStorage (admin drafts only)
+- Cloudflare Worker (API + publish)
+- Cloudflare KV (seller accounts + sessions)
+- Cloudinary (public `catalog.json` for the map)
 - Progressive Web App (installable)
 
 ## Folders
 ```
 temgelo/
-├── index.html          # Public map
-├── admin.html          # Admin panel
-├── manifest.json       # PWA
-├── sw.js               # Service Worker
+├── index.html          # Public map + hamburger
+├── seller.html         # Seller register / login / stock
+├── admin.html          # Admin + moderation
+├── manifest.json
+├── sw.js
 ├── css/styles.css
 ├── js/
 │   ├── sellers.js      # Defaults + helpers
 │   ├── app.js          # Public map logic
-│   └── admin.js        # Admin logic
-├── icons/              # PWA icons
+│   ├── admin.js        # Admin + moderation
+│   └── seller.js       # Seller portal
+├── icons/
+├── images/
 ├── worker/
 │   ├── index.js
 │   └── wrangler.toml
 └── BLUEPRINT.md
 ```
 
-## Live data
-`catalog.json` on Cloudinary:
+## Seller accounts (Option B)
+
+1. Seller opens **seller.html** (or “Sou vendedor” in the hamburger menu).
+2. **Criar conta**: WhatsApp (2449…) + password + name + map pin.
+3. Account is stored in **Cloudflare KV** with `status: "pending"`.
+4. Admin opens **Admin → Moderação**, reviews, **Aprovar** / **Bloquear** / **Apagar**.
+5. On approve, Worker rebuilds public `catalog.json` (approved sellers only) → Cloudinary.
+6. Seller logs in, updates stock/profile; if approved, catalog is republished automatically.
+
+### Auth
+- Identity: normalized WhatsApp number
+- Password: PBKDF2-SHA256 (100k iterations) in the Worker
+- Session: Bearer token in KV (30 days), stored in `localStorage` on the client
+
+### Seller fields
+| Field | Notes |
+|--------|--------|
+| id, whatsapp, passwordHash/Salt | System |
+| name, lat, lng, neighborhood, notes | Profile |
+| price, freeze, buckets, available | Stock |
+| status | `pending` \| `approved` \| `banned` |
+| createdAt, updatedAt | Timestamps |
+
+### 24-hour rule (unchanged)
+Green on map only if `available && buckets > 0 && updatedAt < 24h`.
+
+## Worker API
+
+Base: `https://tem-gelo-publish.xeieloja.workers.dev`
+
+| Method | Path | Auth |
+|--------|------|------|
+| POST | `/publish` | admin password (legacy catalog push) |
+| POST | `/auth/register` | public |
+| POST | `/auth/login` | public → token |
+| POST | `/auth/logout` | Bearer |
+| GET | `/seller/me` | Bearer |
+| PATCH | `/seller/me` | Bearer |
+| GET | `/admin/sellers?password=` | admin |
+| POST | `/admin/moderate` | admin (`approve` \| `ban` \| `delete`) |
+| POST | `/admin/republish` | admin |
+
+### Deploy Worker + KV
+```bash
+# Create KV namespace once
+npx wrangler kv namespace create SELLERS
+npx wrangler kv namespace create SELLERS --preview
+
+# Put the ids into worker/wrangler.toml (binding SELLERS)
+
+npx wrangler secret put ADMIN_PASSWORD
+npx wrangler secret put CLOUDINARY_CLOUD_NAME
+npx wrangler secret put CLOUDINARY_API_KEY
+npx wrangler secret put CLOUDINARY_API_SECRET
+
+npx wrangler deploy
 ```
-https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json
-```
 
-Shape:
-```json
-{
-  "updatedAt": "2026-10-31T14:00:00Z",
-  "sellers": [
-    {
-      "id": "s001",
-      "name": "João – Viana",
-      "lat": -8.905,
-      "lng": 13.37,
-      "available": true,
-      "buckets": 8,
-      "freeze": "muito_congelado",
-      "price": "1500",
-      "whatsapp": "2449xxxxxxxx",
-      "neighborhood": "Viana",
-      "notes": "",
-      "updatedAt": "2026-10-31T14:00:00Z"
-    }
-  ],
-  "texts": {
-    "pageTitle": "Tem Gelo? – Angola",
-    "safetyTitle": "Atenção de Segurança:",
-    "safetyBody": "...",
-    "legendOk": "Tem gelo",
-    "legendNo": "Sem gelo / expirado",
-    "adminWhatsApp": "2449xxxxxxxx"
-  }
-}
-```
+## Admin password
+Must match in:
+1. `js/admin.js` → `ADMIN_PASSWORD`
+2. Worker secret `ADMIN_PASSWORD`
 
-Site texts are edited in Admin → **Textos** and published with the catalog.
+Never commit the real password to a public repo.
 
-## 24-hour rule
-A seller only shows **green** if:
-- `available === true`
-- `buckets > 0`
-- `updatedAt` is less than 24 hours ago
-
-Otherwise the marker is red.
+## Hamburger menu
+- **Public map**: Sou vendedor, Entrar/Criar conta, Segurança
+- **Seller portal**: Stock, Perfil, Mapa, Sair (when logged in)
 
 ## Safety
-Prominent red banner on the public map + report button that opens WhatsApp to admin.
-Number and copy are editable in Admin → Textos.
-
-## Admin password (important)
-There are **two places** that must use the **same** personal password:
-
-1. **Admin panel login** → `js/admin.js`
-   ```js
-   const ADMIN_PASSWORD = "your-personal-password";
-   ```
-
-2. **Worker secret** (checked only when clicking **Publicar**)
-   ```bash
-   npx wrangler secret put ADMIN_PASSWORD
-   ```
-
-Keep them identical. Never commit the real password to a public repo.
-
-## Worker
-- Name: `tem-gelo-publish`
-- URL: `https://tem-gelo-publish.xeieloja.workers.dev`
-- Publish endpoint: `https://tem-gelo-publish.xeieloja.workers.dev/publish`
-
-In `js/admin.js` set:
-```js
-const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish";
-```
+Prominent red banner + report via WhatsApp. Number editable in Admin → Textos.
 
 ## Deploy checklist
-1. Set the same personal password in `js/admin.js` and as Worker secret `ADMIN_PASSWORD`
-2. Set the other 3 Cloudinary secrets on the Worker
-3. Put the Worker URL into `PUBLISH_URL` in `admin.js`
-4. Deploy / upload the static files to Cloudflare Pages
-5. Test: add seller → Publicar → hard-refresh the public map
+1. Create KV namespace and set id in `wrangler.toml`
+2. Same personal password in `admin.js` and Worker secret
+3. Cloudinary secrets on Worker
+4. Deploy Worker
+5. Upload static files to Cloudflare Pages (include `seller.html`)
+6. Test: register on seller.html → approve in Admin → stock update → map
 
 ## Current status
-- Public map live at https://temgelo.pages.dev
-- Admin panel live
+- Public map + hamburger
+- Seller self-registration + login + stock/profile
+- Admin moderation queue
+- Worker auth + KV + auto-republish of approved sellers
 - PWA installable
-- Worker deployed at https://tem-gelo-publish.xeieloja.workers.dev
-- Report button still uses a placeholder WhatsApp number – change it in `js/app.js`

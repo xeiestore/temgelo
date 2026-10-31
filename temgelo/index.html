@@ -31,7 +31,24 @@
       <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="40" style="height:40px;width:auto;display:block;" />
     </a>
     <div class="badge" id="seller-count">— vendedores</div>
+    <button type="button" class="hamburger-btn topbar-hamburger" id="public-hamburger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </div>
+
+  <!-- Public drawer -->
+  <div class="drawer-backdrop hidden" id="public-drawer-backdrop"></div>
+  <nav class="drawer hidden" id="public-drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="32" />
+      <button type="button" class="drawer-close" id="public-drawer-close" aria-label="Fechar">×</button>
+    </div>
+    <div class="drawer-nav">
+      <a href="seller.html" class="drawer-link">🧊 Sou vendedor</a>
+      <a href="seller.html" class="drawer-link">Entrar / Criar conta</a>
+      <a href="#safety-banner" class="drawer-link" id="link-safety">⚠️ Segurança</a>
+    </div>
+  </nav>
 
   <!-- Legend -->
   <div class="legend">
@@ -65,6 +82,34 @@
         });
       });
     }
+
+    // Public hamburger menu
+    (function () {
+      const btn = document.getElementById("public-hamburger");
+      const drawer = document.getElementById("public-drawer");
+      const backdrop = document.getElementById("public-drawer-backdrop");
+      const closeBtn = document.getElementById("public-drawer-close");
+      function open() {
+        drawer.classList.remove("hidden");
+        backdrop.classList.remove("hidden");
+        drawer.setAttribute("aria-hidden", "false");
+        btn.setAttribute("aria-expanded", "true");
+      }
+      function close() {
+        drawer.classList.add("hidden");
+        backdrop.classList.add("hidden");
+        drawer.setAttribute("aria-hidden", "true");
+        btn.setAttribute("aria-expanded", "false");
+      }
+      btn?.addEventListener("click", () => drawer.classList.contains("hidden") ? open() : close());
+      backdrop?.addEventListener("click", close);
+      closeBtn?.addEventListener("click", close);
+      document.getElementById("link-safety")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        close();
+        document.getElementById("safety-banner")?.classList.remove("hidden");
+      });
+    })();
   </script>
 </body>
 </html>
