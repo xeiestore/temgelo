@@ -1,6 +1,6 @@
 // Tem Gelo? – Admin logic
 
-const ADMIN_PASSWORD = "CHANGE_ME"; // Must match the Worker secret ADMIN_PASSWORD
+const ADMIN_PASSWORD = "EuRico2027"; // Must match the Worker secret ADMIN_PASSWORD
 const CATALOG_URL = "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
 const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish";
 
