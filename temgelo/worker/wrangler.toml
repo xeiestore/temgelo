@@ -1,0 +1,11 @@
+name = "tem-gelo-publish"
+main = "index.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+preview_urls = true
+
+# Secrets (set with: wrangler secret put NAME)
+# ADMIN_PASSWORD
+# CLOUDINARY_CLOUD_NAME
+# CLOUDINARY_API_KEY
+# CLOUDINARY_API_SECRET

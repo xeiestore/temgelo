@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Admin – Tem Gelo?</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="admin-body">
+  <!-- Login screen -->
+  <div id="login-screen" class="login-box">
+    <h2>Tem <span style="color:#22c55e">Gelo?</span> Admin</h2>
+    <input type="password" id="admin-password" placeholder="Palavra-passe" autocomplete="current-password" />
+    <button class="btn btn-primary" type="button" onclick="tryLogin()">Entrar</button>
+    <p class="text-sm text-muted mt-2" style="text-align:center">
+      Só o administrador pode gerir os vendedores.
+    </p>
+  </div>
+
+  <!-- Main admin -->
+  <div id="admin-screen" class="hidden">
+    <div class="admin-header">
+      <h1>Tem <span>Gelo?</span> Admin</h1>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" type="button" onclick="logout()">Sair</button>
+        <a class="btn btn-ghost" href="index.html" target="_blank">Ver mapa</a>
+        <button class="btn btn-green" type="button" onclick="publishCatalog()">Publicar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>
+        Vendedores
+        <button class="btn btn-primary" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="openSellerModal()">+ Adicionar</button>
+      </h3>
+      <div id="seller-list" class="seller-list"></div>
+    </div>
+
+    <div class="card">
+      <h3>Estado do catálogo</h3>
+      <p class="text-sm text-muted" id="catalog-status">A carregar…</p>
+      <p class="text-sm mt-2">
+        Depois de editar, clique em <strong>Publicar</strong> para enviar para o Cloudinary.
+        O mapa público vai mostrar as alterações em poucos segundos.
+      </p>
+    </div>
+  </div>
+
+  <!-- Seller modal -->
+  <div id="seller-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 id="modal-title">Adicionar vendedor</h3>
+      <input type="hidden" id="seller-id" />
+
+      <div class="form-group">
+        <label>Nome / identificação</label>
+        <input type="text" id="f-name" placeholder="Ex: João – Viana" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" id="f-lat" step="any" placeholder="-8.8383" />
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" id="f-lng" step="any" placeholder="13.2344" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Bairro / zona</label>
+        <input type="text" id="f-neighborhood" placeholder="Viana, Talatona…" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Baldes disponíveis</label>
+          <input type="number" id="f-buckets" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label>Preço (Kz)</label>
+          <input type="text" id="f-price" placeholder="1500" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nível de congelamento</label>
+        <select id="f-freeze">
+          <option value="muito_congelado">Muito congelado</option>
+          <option value="parcial">Parcialmente congelado</option>
+          <option value="fraco">Fraco / a derreter</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>WhatsApp (com código do país)</label>
+        <input type="text" id="f-whatsapp" placeholder="2449xxxxxxxx" />
+      </div>
+
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <textarea id="f-notes" rows="2" placeholder="Horário, tamanho dos baldes…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="f-available" checked />
+          Tem gelo disponível agora
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" onclick="closeSellerModal()">Cancelar</button>
+        <button class="btn btn-green" type="button" onclick="saveSeller()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sellers.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
