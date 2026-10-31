@@ -1,11 +1,36 @@
 // Tem Gelo? – Admin logic
 
-const ADMIN_PASSWORD = "EuRico2027"; // Change this!
+const ADMIN_PASSWORD = "CHANGE_ME"; // Must match the Worker secret ADMIN_PASSWORD
 const CATALOG_URL = "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
-const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish"; // Will be your Worker URL later, e.g. https://tem-gelo-worker.xxx.workers.dev/publish
+const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish";
 
 let sellers = [];
+let texts = { ...DEFAULT_TEXTS };
 let editingId = null;
+
+const TEXT_FIELDS = [
+  "pageTitle",
+  "pageDescription",
+  "legendOk",
+  "legendNo",
+  "safetyTitle",
+  "safetyBody",
+  "statusOk",
+  "statusNo",
+  "labelBuckets",
+  "labelFreeze",
+  "labelPrice",
+  "labelUpdated",
+  "btnWhatsApp",
+  "btnReport",
+  "waMessage",
+  "reportMessage",
+  "countFormat",
+  "adminWhatsApp",
+  "freezeMuito",
+  "freezeParcial",
+  "freezeFraco"
+];
 
 // ---------- Boot ----------
 document.addEventListener("DOMContentLoaded", () => {
@@ -42,10 +67,26 @@ function showAdmin() {
   loadSellers();
 }
 
+function showSection(name) {
+  document.querySelectorAll(".admin-section").forEach((el) => el.classList.add("hidden"));
+  document.querySelectorAll(".sidebar-link").forEach((el) => el.classList.remove("active"));
+  const section = document.getElementById("section-" + name);
+  if (section) section.classList.remove("hidden");
+  const link = document.querySelector(`.sidebar-link[data-section="${name}"]`);
+  if (link) link.classList.add("active");
+}
+
 // ---------- Load ----------
 async function loadSellers() {
   // 1. Start from defaults
   sellers = JSON.parse(JSON.stringify(DEFAULT_SELLERS));
+  texts = { ...DEFAULT_TEXTS };
+
+  // Local draft texts (if any)
+  try {
+    const localTexts = localStorage.getItem("temgelo_texts");
+    if (localTexts) texts = { ...DEFAULT_TEXTS, ...JSON.parse(localTexts) };
+  } catch (_) {}
 
   // 2. Try live catalog
   try {
@@ -56,6 +97,9 @@ async function loadSellers() {
         sellers = data.sellers;
         document.getElementById("catalog-status").textContent =
           `Catálogo remoto carregado (${sellers.length} vendedores) – ${data.updatedAt || ""}`;
+      }
+      if (data && data.texts && typeof data.texts === "object") {
+        texts = { ...DEFAULT_TEXTS, ...data.texts };
       }
     } else {
       throw new Error("HTTP " + res.status);
@@ -75,7 +119,32 @@ async function loadSellers() {
     }
   }
 
+  fillTextsForm();
   renderList();
+}
+
+function fillTextsForm() {
+  TEXT_FIELDS.forEach((key) => {
+    const el = document.getElementById("t-" + key);
+    if (el) el.value = texts[key] != null ? texts[key] : DEFAULT_TEXTS[key] || "";
+  });
+}
+
+function readTextsForm() {
+  const next = { ...DEFAULT_TEXTS };
+  TEXT_FIELDS.forEach((key) => {
+    const el = document.getElementById("t-" + key);
+    if (el) next[key] = el.value.trim();
+  });
+  return next;
+}
+
+function saveTexts() {
+  texts = readTextsForm();
+  localStorage.setItem("temgelo_texts", JSON.stringify(texts));
+  document.getElementById("catalog-status").textContent =
+    "Textos guardados localmente – ainda não publicados";
+  alert("Textos guardados. Clique em Publicar para o mapa público.");
 }
 
 // ---------- Render list ----------
@@ -217,19 +286,27 @@ function reconfirm(id) {
 // ---------- Local draft ----------
 function saveLocal() {
   localStorage.setItem("temgelo_sellers", JSON.stringify(sellers));
+  localStorage.setItem("temgelo_texts", JSON.stringify(texts));
   document.getElementById("catalog-status").textContent =
     "Rascunho guardado localmente – ainda não publicado";
 }
 
 // ---------- Publish ----------
 async function publishCatalog() {
+  // Include latest form values if user is on Texts section
+  if (document.getElementById("t-pageTitle")) {
+    texts = readTextsForm();
+  }
+
   const catalog = {
     updatedAt: new Date().toISOString(),
-    sellers: sellers
+    sellers: sellers,
+    texts: texts
   };
 
   // Always keep a local copy
   localStorage.setItem("temgelo_sellers", JSON.stringify(sellers));
+  localStorage.setItem("temgelo_texts", JSON.stringify(texts));
 
   if (!PUBLISH_URL) {
     // Fallback: download JSON so you can upload manually to Cloudinary

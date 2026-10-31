@@ -74,11 +74,37 @@ const DEFAULT_SELLERS = [
   }
 ];
 
-// Freeze labels in Portuguese
+// Freeze labels in Portuguese (defaults; overridden by catalog.texts)
 const FREEZE_LABELS = {
   muito_congelado: "Muito congelado",
   parcial: "Parcialmente congelado",
   fraco: "Fraco / a derreter"
+};
+
+// Default site texts (overridden by catalog.texts when published)
+const DEFAULT_TEXTS = {
+  pageTitle: "Tem Gelo? – Luanda",
+  pageDescription: "Tem Gelo? Encontre baldes de gelo perto de si em Luanda.",
+  legendOk: "Tem gelo",
+  legendNo: "Sem gelo / expirado",
+  safetyTitle: "Atenção de Segurança:",
+  safetyBody:
+    "Se uma zona ou bairro parecer suspeito, não entre. Criminosos podem usar a app para atrair pessoas. Confirme sempre por telefone/WhatsApp antes de ir e prefira zonas conhecidas.",
+  statusOk: "Tem gelo",
+  statusNo: "Sem gelo / expirado",
+  labelBuckets: "Baldes",
+  labelFreeze: "Congelamento",
+  labelPrice: "Preço",
+  labelUpdated: "Atualizado",
+  btnWhatsApp: "Contactar no WhatsApp",
+  btnReport: "Reportar este vendedor",
+  waMessage: "Olá! Vi no Tem Gelo? que tem baldes de gelo. Ainda tem disponível?",
+  reportMessage: "Quero reportar o vendedor \"{name}\" (ID: {id}) no Tem Gelo?. Motivo: ",
+  countFormat: "{available} de {total} com gelo",
+  adminWhatsApp: "244900000000",
+  freezeMuito: "Muito congelado",
+  freezeParcial: "Parcialmente congelado",
+  freezeFraco: "Fraco / a derreter"
 };
 
 // Helper: is still "fresh" (updated in last 24 hours)

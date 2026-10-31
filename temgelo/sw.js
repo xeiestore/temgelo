@@ -1,9 +1,8 @@
 // Tem Gelo? – Service Worker (basic offline shell)
-const CACHE_NAME = "temgelo-v1";
+const CACHE_NAME = "temgelo-v2";
 const ASSETS = [
   "./",
-  "./index.html",
-  "./admin.html",
+  "./admin",
   "./css/styles.css",
   "./js/sellers.js",
   "./js/app.js",
@@ -44,14 +43,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // For everything else: cache first, then network
+  // Navigations (map / admin): network first so Cloudflare 308 redirects work
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (res.ok && url.origin === self.location.origin) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request).then((c) => c || caches.match("./")))
+    );
+    return;
+  }
+
+  // Static assets: cache first, then network
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
         cached ||
         fetch(event.request)
           .then((res) => {
-            // Cache successful same-origin GET responses
             if (event.request.method === "GET" && res.ok && url.origin === self.location.origin) {
               const clone = res.clone();
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));

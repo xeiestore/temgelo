@@ -35,17 +35,19 @@
 
   <!-- Legend -->
   <div class="legend">
-    <div class="legend-item"><span class="dot green"></span> Tem gelo</div>
-    <div class="legend-item"><span class="dot red"></span> Sem gelo / expirado</div>
+    <div class="legend-item"><span class="dot green"></span> <span id="legend-ok">Tem gelo</span></div>
+    <div class="legend-item"><span class="dot red"></span> <span id="legend-no">Sem gelo / expirado</span></div>
   </div>
 
   <!-- Safety banner -->
   <div class="safety-banner" id="safety-banner">
     <div>
-      <strong>Atenção de Segurança:</strong>
-      Se uma zona ou bairro parecer suspeito, <strong>não entre</strong>.
-      Criminosos podem usar a app para atrair pessoas.
-      Confirme sempre por telefone/WhatsApp antes de ir e prefira zonas conhecidas.
+      <strong id="safety-title">Atenção de Segurança:</strong>
+      <span id="safety-body">
+        Se uma zona ou bairro parecer suspeito, não entre.
+        Criminosos podem usar a app para atrair pessoas.
+        Confirme sempre por telefone/WhatsApp antes de ir e prefira zonas conhecidas.
+      </span>
     </div>
     <button type="button" aria-label="Fechar" onclick="document.getElementById('safety-banner').classList.add('hidden')">×</button>
   </div>

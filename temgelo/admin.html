@@ -27,35 +27,171 @@
   </div>
 
   <!-- Main admin -->
-  <div id="admin-screen" class="hidden">
-    <div class="admin-header">
-      <h1 style="display:flex;align-items:center;gap:10px">
-        <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="36" style="height:36px;width:auto;" />
+  <div id="admin-screen" class="admin-layout hidden">
+    <!-- Left sidebar (full height) -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-brand">
+        <img src="images/logo-header-dark.png" alt="Tem Gelo?" />
         <span>Admin</span>
-      </h1>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost" type="button" onclick="logout()">Sair</button>
-        <a class="btn btn-ghost" href="index.html" target="_blank">Ver mapa</a>
-        <button class="btn btn-green" type="button" onclick="publishCatalog()">Publicar</button>
       </div>
-    </div>
 
-    <div class="card">
-      <h3>
-        Vendedores
-        <button class="btn btn-primary" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="openSellerModal()">+ Adicionar</button>
-      </h3>
-      <div id="seller-list" class="seller-list"></div>
-    </div>
+      <nav class="sidebar-nav">
+        <button type="button" class="sidebar-link active" data-section="sellers" onclick="showSection('sellers')">
+          <span class="sidebar-icon">🧊</span>
+          <span class="sidebar-label">Vendedores</span>
+        </button>
+        <button type="button" class="sidebar-link" data-section="texts" onclick="showSection('texts')">
+          <span class="sidebar-icon">✏️</span>
+          <span class="sidebar-label">Textos</span>
+        </button>
+        <button type="button" class="sidebar-link" data-section="catalog" onclick="showSection('catalog')">
+          <span class="sidebar-icon">📋</span>
+          <span class="sidebar-label">Catálogo</span>
+        </button>
+      </nav>
 
-    <div class="card">
-      <h3>Estado do catálogo</h3>
-      <p class="text-sm text-muted" id="catalog-status">A carregar…</p>
-      <p class="text-sm mt-2">
-        Depois de editar, clique em <strong>Publicar</strong> para enviar para o Cloudinary.
-        O mapa público vai mostrar as alterações em poucos segundos.
-      </p>
-    </div>
+      <div class="sidebar-actions">
+        <button class="btn btn-green sidebar-btn" type="button" onclick="publishCatalog()">Publicar</button>
+        <a class="btn btn-ghost sidebar-btn" href="/" target="_blank">Ver mapa</a>
+        <button class="btn btn-ghost sidebar-btn" type="button" onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="admin-main">
+      <section id="section-sellers" class="admin-section">
+        <div class="card">
+          <h3>
+            Vendedores
+            <button class="btn btn-primary" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="openSellerModal()">+ Adicionar</button>
+          </h3>
+          <div id="seller-list" class="seller-list"></div>
+        </div>
+      </section>
+
+      <section id="section-texts" class="admin-section hidden">
+        <div class="card">
+          <h3>Textos do site</h3>
+          <p class="text-sm text-muted mb-2">
+            Altere os textos do mapa público. Depois clique em <strong>Publicar</strong>.
+          </p>
+
+          <div class="form-group">
+            <label>Título da página</label>
+            <input type="text" id="t-pageTitle" />
+          </div>
+          <div class="form-group">
+            <label>Descrição (SEO / partilha)</label>
+            <input type="text" id="t-pageDescription" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Legenda – tem gelo</label>
+              <input type="text" id="t-legendOk" />
+            </div>
+            <div class="form-group">
+              <label>Legenda – sem gelo</label>
+              <input type="text" id="t-legendNo" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Banner de segurança – título</label>
+            <input type="text" id="t-safetyTitle" />
+          </div>
+          <div class="form-group">
+            <label>Banner de segurança – texto</label>
+            <textarea id="t-safetyBody" rows="3"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Estado no popup – OK</label>
+              <input type="text" id="t-statusOk" />
+            </div>
+            <div class="form-group">
+              <label>Estado no popup – sem</label>
+              <input type="text" id="t-statusNo" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Label: Baldes</label>
+              <input type="text" id="t-labelBuckets" />
+            </div>
+            <div class="form-group">
+              <label>Label: Congelamento</label>
+              <input type="text" id="t-labelFreeze" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Label: Preço</label>
+              <input type="text" id="t-labelPrice" />
+            </div>
+            <div class="form-group">
+              <label>Label: Atualizado</label>
+              <input type="text" id="t-labelUpdated" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Botão WhatsApp</label>
+            <input type="text" id="t-btnWhatsApp" />
+          </div>
+          <div class="form-group">
+            <label>Botão Reportar</label>
+            <input type="text" id="t-btnReport" />
+          </div>
+          <div class="form-group">
+            <label>Mensagem WhatsApp (ao contactar vendedor)</label>
+            <textarea id="t-waMessage" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem de report ({name} e {id} são substituídos)</label>
+            <textarea id="t-reportMessage" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Contagem no topo ({available} e {total})</label>
+            <input type="text" id="t-countFormat" />
+          </div>
+          <div class="form-group">
+            <label>WhatsApp do admin (para reports, com código do país)</label>
+            <input type="text" id="t-adminWhatsApp" placeholder="2449xxxxxxxx" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Congelamento: muito</label>
+              <input type="text" id="t-freezeMuito" />
+            </div>
+            <div class="form-group">
+              <label>Congelamento: parcial</label>
+              <input type="text" id="t-freezeParcial" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Congelamento: fraco</label>
+            <input type="text" id="t-freezeFraco" />
+          </div>
+
+          <button class="btn btn-primary" type="button" onclick="saveTexts()">Guardar textos</button>
+        </div>
+      </section>
+
+      <section id="section-catalog" class="admin-section hidden">
+        <div class="card">
+          <h3>Estado do catálogo</h3>
+          <p class="text-sm text-muted" id="catalog-status">A carregar…</p>
+          <p class="text-sm mt-2">
+            Depois de editar, clique em <strong>Publicar</strong> para enviar para o Cloudinary.
+            O mapa público vai mostrar as alterações em poucos segundos.
+          </p>
+        </div>
+      </section>
+    </main>
   </div>
 
   <!-- Seller modal -->

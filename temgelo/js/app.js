@@ -1,20 +1,20 @@
 // Tem Gelo? – public map logic
 
 const CATALOG_URL = "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
-// Add ?t= timestamp to bust cache when needed
 
 let sellers = [...DEFAULT_SELLERS];
+let texts = { ...DEFAULT_TEXTS };
 let map;
 let markersLayer;
 
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
+  applyTexts();
   initMap();
   loadCatalog();
 });
 
 function initMap() {
-  // Center on Luanda
   map = L.map("map", {
     zoomControl: false,
     attributionControl: true
@@ -41,22 +41,49 @@ async function loadCatalog() {
       sellers = data.sellers;
       console.log("Catalog loaded:", sellers.length, "sellers");
     }
+    if (data && data.texts && typeof data.texts === "object") {
+      texts = { ...DEFAULT_TEXTS, ...data.texts };
+    }
   } catch (err) {
     console.warn("Using default sellers (catalog not available yet):", err.message);
   }
+  applyTexts();
   renderMarkers();
   updateCount();
+}
+
+function applyTexts() {
+  document.title = texts.pageTitle || DEFAULT_TEXTS.pageTitle;
+
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute("content", texts.pageDescription || DEFAULT_TEXTS.pageDescription);
+
+  const legendOk = document.getElementById("legend-ok");
+  const legendNo = document.getElementById("legend-no");
+  if (legendOk) legendOk.textContent = texts.legendOk || DEFAULT_TEXTS.legendOk;
+  if (legendNo) legendNo.textContent = texts.legendNo || DEFAULT_TEXTS.legendNo;
+
+  const safetyTitle = document.getElementById("safety-title");
+  const safetyBody = document.getElementById("safety-body");
+  if (safetyTitle) safetyTitle.textContent = texts.safetyTitle || DEFAULT_TEXTS.safetyTitle;
+  if (safetyBody) safetyBody.textContent = texts.safetyBody || DEFAULT_TEXTS.safetyBody;
+}
+
+function freezeLabel(key) {
+  if (key === "muito_congelado") return texts.freezeMuito || FREEZE_LABELS.muito_congelado;
+  if (key === "parcial") return texts.freezeParcial || FREEZE_LABELS.parcial;
+  if (key === "fraco") return texts.freezeFraco || FREEZE_LABELS.fraco;
+  return FREEZE_LABELS[key] || key;
 }
 
 // ---------- Markers ----------
 function renderMarkers() {
   markersLayer.clearLayers();
 
-  sellers.forEach(seller => {
+  sellers.forEach((seller) => {
     const available = isEffectivelyAvailable(seller);
     const color = available ? "#22c55e" : "#ef4444";
 
-    // Custom circle marker
     const marker = L.circleMarker([seller.lat, seller.lng], {
       radius: 11,
       fillColor: color,
@@ -76,7 +103,7 @@ function renderMarkers() {
 }
 
 function createPopup(seller, available) {
-  const freezeLabel = FREEZE_LABELS[seller.freeze] || seller.freeze;
+  const freeze = freezeLabel(seller.freeze);
   const updated = seller.updatedAt
     ? new Date(seller.updatedAt).toLocaleString("pt-AO", {
         day: "2-digit",
@@ -87,40 +114,44 @@ function createPopup(seller, available) {
     : "—";
 
   const statusHtml = available
-    ? `<span class="popup-status ok">Tem gelo</span>`
-    : `<span class="popup-status no">Sem gelo / expirado</span>`;
+    ? `<span class="popup-status ok">${escapeHtml(texts.statusOk || DEFAULT_TEXTS.statusOk)}</span>`
+    : `<span class="popup-status no">${escapeHtml(texts.statusNo || DEFAULT_TEXTS.statusNo)}</span>`;
 
   const waNumber = (seller.whatsapp || "").replace(/\D/g, "");
-  const waMsg = encodeURIComponent(
-    `Olá! Vi no Tem Gelo? que tem baldes de gelo. Ainda tem disponível?`
-  );
-  const waLink = waNumber
-    ? `https://wa.me/${waNumber}?text=${waMsg}`
-    : "#";
+  const waMsg = encodeURIComponent(texts.waMessage || DEFAULT_TEXTS.waMessage);
+  const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waMsg}` : "#";
 
   return `
     <div class="popup-title">${escapeHtml(seller.name)}</div>
     ${statusHtml}
     <div class="popup-meta">${escapeHtml(seller.neighborhood || "")}</div>
     <div class="popup-row">
-      <span>Baldes</span>
+      <span>${escapeHtml(texts.labelBuckets || DEFAULT_TEXTS.labelBuckets)}</span>
       <span>${seller.buckets ?? "—"}</span>
     </div>
     <div class="popup-row">
-      <span>Congelamento</span>
-      <span>${escapeHtml(freezeLabel)}</span>
+      <span>${escapeHtml(texts.labelFreeze || DEFAULT_TEXTS.labelFreeze)}</span>
+      <span>${escapeHtml(freeze)}</span>
     </div>
     <div class="popup-row">
-      <span>Preço</span>
+      <span>${escapeHtml(texts.labelPrice || DEFAULT_TEXTS.labelPrice)}</span>
       <span>${seller.price ? seller.price + " Kz" : "—"}</span>
     </div>
     <div class="popup-row">
-      <span>Atualizado</span>
+      <span>${escapeHtml(texts.labelUpdated || DEFAULT_TEXTS.labelUpdated)}</span>
       <span>${updated}</span>
     </div>
     ${seller.notes ? `<div class="text-sm text-muted mt-2">${escapeHtml(seller.notes)}</div>` : ""}
-    ${waNumber ? `<a class="btn-wa" href="${waLink}" target="_blank" rel="noopener">Contactar no WhatsApp</a>` : ""}
-    <button class="btn-report" type="button" onclick="reportSeller('${seller.id}')">Reportar este vendedor</button>
+    ${
+      waNumber
+        ? `<a class="btn-wa" href="${waLink}" target="_blank" rel="noopener">${escapeHtml(
+            texts.btnWhatsApp || DEFAULT_TEXTS.btnWhatsApp
+          )}</a>`
+        : ""
+    }
+    <button class="btn-report" type="button" onclick="reportSeller('${seller.id}')">${escapeHtml(
+      texts.btnReport || DEFAULT_TEXTS.btnReport
+    )}</button>
   `;
 }
 
@@ -129,19 +160,22 @@ function updateCount() {
   const total = sellers.length;
   const el = document.getElementById("seller-count");
   if (el) {
-    el.textContent = `${available} de ${total} com gelo`;
+    const fmt = texts.countFormat || DEFAULT_TEXTS.countFormat;
+    el.textContent = fmt
+      .replace("{available}", String(available))
+      .replace("{total}", String(total));
   }
 }
 
 // ---------- Report ----------
 function reportSeller(id) {
-  const seller = sellers.find(s => s.id === id);
+  const seller = sellers.find((s) => s.id === id);
   const name = seller ? seller.name : id;
+  const template = texts.reportMessage || DEFAULT_TEXTS.reportMessage;
   const msg = encodeURIComponent(
-    `Quero reportar o vendedor "${name}" (ID: ${id}) no Tem Gelo?. Motivo: `
+    template.replace("{name}", name).replace("{id}", id)
   );
-  // Change this number to your admin WhatsApp
-  const adminWa = "244900000000";
+  const adminWa = (texts.adminWhatsApp || DEFAULT_TEXTS.adminWhatsApp).replace(/\D/g, "");
   window.location.href = `https://wa.me/${adminWa}?text=${msg}`;
 }
 
