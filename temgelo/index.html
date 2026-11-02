@@ -74,7 +74,7 @@
         <h3 id="report-modal-title">Reportar um problema</h3>
         <button type="button" class="report-modal-close" onclick="closeReportModal()" aria-label="Fechar">×</button>
       </div>
-      <p class="text-sm text-muted mb-2">A mensagem vai para a equipa Tem Gelo? (não para WhatsApp).</p>
+      <p class="text-sm text-muted mb-2">A mensagem vai para a equipa Tem Gelo?.</p>
       <div class="form-group">
         <label for="report-message">Mensagem</label>
         <textarea id="report-message" rows="4" placeholder="Descreva o problema…"></textarea>
@@ -143,6 +143,14 @@
       const iconLogout = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>';
       const iconReport = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9l-6-6zM5 19V5h9v5h5v9H5zm2-4h10v2H7v-2zm0-4h7v2H7v-2z"/></svg>';
 
+      function menuText(key, fallback) {
+        const src = (window.TEMGELO_TEXTS && typeof window.TEMGELO_TEXTS === "object")
+          ? window.TEMGELO_TEXTS
+          : (typeof DEFAULT_TEXTS !== "undefined" ? DEFAULT_TEXTS : {});
+        const v = src[key];
+        return (v != null && String(v).trim() !== "") ? String(v) : fallback;
+      }
+
       function isSellerLoggedIn() {
         return !!(localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY));
       }
@@ -151,21 +159,22 @@
         if (!nav) return;
         const loggedIn = isSellerLoggedIn();
         const reportLink =
-          '<a href="#" class="drawer-link" id="link-report">' + iconReport + ' Reportar um problema</a>';
+          '<a href="#" class="drawer-link" id="link-report">' + iconReport + ' ' +
+          menuText("menuReport", "Reportar um problema") + '</a>';
         if (loggedIn) {
           nav.innerHTML =
-            '<div class="drawer-section-label">Área do vendedor</div>' +
-            '<a href="seller.html" class="drawer-link">' + iconStock + ' Meu stock</a>' +
-            '<a href="seller.html#perfil" class="drawer-link">' + iconUser + ' Perfil</a>' +
-            '<a href="seller.html" class="drawer-link">' + iconMap + ' Painel</a>' +
-            '<a href="#" class="drawer-link drawer-link-danger" id="public-seller-logout">' + iconLogout + ' Sair</a>' +
-            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' Segurança</a>' +
+            '<div class="drawer-section-label">' + menuText("menuSellerSection", "Área do vendedor") + '</div>' +
+            '<a href="seller.html" class="drawer-link">' + iconStock + ' ' + menuText("menuStock", "Meu stock") + '</a>' +
+            '<a href="seller.html#perfil" class="drawer-link">' + iconUser + ' ' + menuText("menuProfile", "Perfil") + '</a>' +
+            '<a href="seller.html" class="drawer-link">' + iconMap + ' ' + menuText("menuPanel", "Painel") + '</a>' +
+            '<a href="#" class="drawer-link drawer-link-danger" id="public-seller-logout">' + iconLogout + ' ' + menuText("menuLogout", "Sair") + '</a>' +
+            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' ' + menuText("menuSafety", "Segurança") + '</a>' +
             reportLink;
         } else {
           nav.innerHTML =
-            '<a href="seller.html" class="drawer-link">' + iconLogin + ' Entrar</a>' +
-            '<a href="seller.html#registar" class="drawer-link">' + iconUser + ' Criar conta</a>' +
-            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' Segurança</a>' +
+            '<a href="seller.html" class="drawer-link">' + iconLogin + ' ' + menuText("menuLogin", "Entrar") + '</a>' +
+            '<a href="seller.html#registar" class="drawer-link">' + iconUser + ' ' + menuText("menuRegister", "Criar conta") + '</a>' +
+            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' ' + menuText("menuSafety", "Segurança") + '</a>' +
             reportLink;
         }
 
@@ -184,7 +193,8 @@
           localStorage.removeItem(TOKEN_KEY);
           sessionStorage.removeItem(TOKEN_KEY);
           close();
-          renderNav();
+          window.renderPublicDrawerNav = renderNav;
+      renderNav();
         });
       }
 

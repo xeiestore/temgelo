@@ -1,5 +1,5 @@
 // Tem Gelo? – Service Worker (basic offline shell)
-const CACHE_NAME = "temgelo-v10";
+const CACHE_NAME = "temgelo-v12";
 const ASSETS = [
   "./",
   "./index.html",

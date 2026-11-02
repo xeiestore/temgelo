@@ -106,7 +106,16 @@ const DEFAULT_TEXTS = {
   adminWhatsApp: "244900000000",
   freezeMuito: "Muito congelado",
   freezeParcial: "Parcialmente congelado",
-  freezeFraco: "Fraco / a derreter"
+  freezeFraco: "Fraco / a derreter",
+  menuLogin: "Entrar",
+  menuRegister: "Criar conta",
+  menuSafety: "Segurança",
+  menuReport: "Reportar um problema",
+  menuSellerSection: "Área do vendedor",
+  menuStock: "Meu stock",
+  menuProfile: "Perfil",
+  menuPanel: "Painel",
+  menuLogout: "Sair"
 };
 
 // Helper: is still "fresh" (updated in last 24 hours)

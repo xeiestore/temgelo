@@ -18,6 +18,7 @@ let pendingReportSellerName = "";
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
   applyTexts();
+  if (typeof window !== "undefined") window.TEMGELO_TEXTS = texts;
   initMap();
   loadCatalog();
   setInterval(loadCatalog, POLL_MS);

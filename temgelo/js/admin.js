@@ -34,7 +34,16 @@ const TEXT_FIELDS = [
   "adminWhatsApp",
   "freezeMuito",
   "freezeParcial",
-  "freezeFraco"
+  "freezeFraco",
+  "menuLogin",
+  "menuRegister",
+  "menuSafety",
+  "menuReport",
+  "menuSellerSection",
+  "menuStock",
+  "menuProfile",
+  "menuPanel",
+  "menuLogout"
 ];
 
 // ---------- Boot ----------
@@ -531,42 +540,77 @@ function readImagesForm() {
 
 function fillImagesForm(images) {
   const img = images || {};
-  const h = document.getElementById("img-logoHeader");
-  const d = document.getElementById("img-logoDrawer");
-  const b = document.getElementById("img-logoBrand");
-  if (h) h.value = img.logoHeader || "";
-  if (d) d.value = img.logoDrawer || "";
-  if (b) b.value = img.logoBrand || "";
-  const ph = document.getElementById("img-preview-header");
-  const pb = document.getElementById("img-preview-brand");
-  if (ph) ph.src = img.logoHeader || img.logoDrawer || "";
-  if (pb) pb.src = img.logoBrand || "";
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || "";
+  };
+  set("img-logoHeader", img.logoHeader);
+  set("img-logoDrawer", img.logoDrawer);
+  set("img-logoBrand", img.logoBrand);
+
+  const map = {
+    logoHeader: "img-preview-header",
+    logoDrawer: "img-preview-drawer",
+    logoBrand: "img-preview-brand"
+  };
+  Object.keys(map).forEach((slot) => {
+    const el = document.getElementById(map[slot]);
+    if (el && img[slot]) {
+      el.src = img[slot];
+      el.style.display = "block";
+    }
+  });
 }
 
-async function saveImages() {
-  const images = readImagesForm();
+async function uploadSiteImage(slot, fileInputId) {
+  const input = document.getElementById(fileInputId);
+  const status = document.getElementById("status-" + slot);
+  if (!input || !input.files || !input.files[0]) {
+    alert("Escolha um ficheiro de imagem primeiro.");
+    return;
+  }
+  const file = input.files[0];
+  if (file.size > 4.5 * 1024 * 1024) {
+    alert("Imagem demasiado grande (máx. cerca de 4 MB).");
+    return;
+  }
+  if (status) status.textContent = "A enviar…";
+
+  const form = new FormData();
+  form.append("password", ADMIN_PASSWORD);
+  form.append("slot", slot);
+  form.append("file", file, file.name);
+
   try {
-    const res = await fetch(API_BASE + "/admin/republish", {
+    const res = await fetch(API_BASE + "/admin/upload-image", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        password: ADMIN_PASSWORD,
-        texts: readTextsForm ? readTextsForm() : texts,
-        images
-      })
+      body: form
     });
-    if (!res.ok) throw new Error(await res.text());
-    fillImagesForm(images);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || (await res.text().catch(() => res.statusText)));
+    }
+    if (data.images) fillImagesForm(data.images);
+    else if (data.url) {
+      const hidden = document.getElementById("img-" + slot);
+      if (hidden) hidden.value = data.url;
+      const previewId =
+        slot === "logoHeader"
+          ? "img-preview-header"
+          : slot === "logoDrawer"
+            ? "img-preview-drawer"
+            : "img-preview-brand";
+      const prev = document.getElementById(previewId);
+      if (prev) prev.src = data.url;
+    }
+    if (status) status.textContent = "Carregado · " + new Date().toLocaleTimeString("pt-AO");
     document.getElementById("catalog-status").textContent =
-      "Imagens publicadas – " + new Date().toLocaleString("pt-AO");
-    alert("Imagens guardadas. O mapa público usa estes URLs.");
+      "Imagem " + slot + " actualizada – " + new Date().toLocaleString("pt-AO");
   } catch (err) {
-    alert("Erro ao guardar imagens: " + (err.message || err));
+    if (status) status.textContent = "Erro";
+    alert("Erro no upload: " + (err.message || err));
   }
 }
-
-// Load images when catalog loads
-const _origLoadCatalogAdmin = typeof loadCatalog === "function" ? loadCatalog : null;
 
 // ---------- Reports ----------
 async function loadReports() {

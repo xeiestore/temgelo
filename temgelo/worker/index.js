@@ -632,6 +632,77 @@ export default {
         return jsonError("action inválida.", 400);
       }
 
+      // ---- Admin image upload (Cloudinary) ----
+      if (request.method === "POST" && path.endsWith("/admin/upload-image")) {
+        const form = await request.formData();
+        const password = String(form.get("password") || "");
+        if (password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+
+        const slot = String(form.get("slot") || "").trim();
+        const allowed = ["logoHeader", "logoDrawer", "logoBrand"];
+        if (!allowed.includes(slot)) {
+          return jsonError("slot inválido. Use logoHeader, logoDrawer ou logoBrand.", 400);
+        }
+
+        const file = form.get("file");
+        if (!file || typeof file === "string") {
+          return jsonError("Ficheiro de imagem em falta.", 400);
+        }
+        const size = file.size || 0;
+        if (size < 100) return jsonError("Ficheiro demasiado pequeno.", 400);
+        if (size > 4.5 * 1024 * 1024) {
+          return jsonError("Imagem demasiado grande (máx. ~4 MB).", 400);
+        }
+
+        if (
+          !env.CLOUDINARY_CLOUD_NAME ||
+          !env.CLOUDINARY_API_KEY ||
+          !env.CLOUDINARY_API_SECRET
+        ) {
+          return jsonError("Cloudinary não configurado no Worker.", 500);
+        }
+
+        const timestamp = Math.floor(Date.now() / 1000);
+        // public_id includes path; do not also send folder (avoids double path)
+        const publicId = `gelo/site/${slot}`;
+        const paramsToSign = `invalidate=true&overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
+        const signature = await signCloudinary(
+          paramsToSign,
+          env.CLOUDINARY_API_SECRET
+        );
+
+        const cloudForm = new FormData();
+        cloudForm.append("file", file, file.name || slot + ".png");
+        cloudForm.append("api_key", env.CLOUDINARY_API_KEY);
+        cloudForm.append("timestamp", String(timestamp));
+        cloudForm.append("signature", signature);
+        cloudForm.append("public_id", publicId);
+        cloudForm.append("overwrite", "true");
+        cloudForm.append("invalidate", "true");
+
+        const cloudRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+          { method: "POST", body: cloudForm }
+        );
+        if (!cloudRes.ok) {
+          const errText = await cloudRes.text();
+          return jsonError(
+            "Falha no upload Cloudinary: " + errText.slice(0, 200),
+            502
+          );
+        }
+        const cloud = await cloudRes.json();
+        const url = cloud.secure_url || cloud.url;
+        if (!url) return jsonError("Cloudinary não devolveu URL.", 502);
+
+        const images = await loadSiteImages(env);
+        images[slot] = url;
+        await env.SELLERS.put("meta:images", JSON.stringify(images));
+        await rebuildPublicCatalog(env);
+
+        return respond({ ok: true, slot, url, images });
+      }
+
       if (request.method === "POST" && path.endsWith("/admin/republish")) {
         const body = await request.json();
         if (body.password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
