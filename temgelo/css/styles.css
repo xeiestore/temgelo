@@ -1535,3 +1535,53 @@ html.seller-view-profile #section-stock {
   text-decoration: underline;
   color: #bfdbfe;
 }
+
+.packages-list { display: flex; flex-direction: column; gap: 8px; }
+.package-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 6px;
+  align-items: end;
+}
+.package-row input, .package-row select {
+  width: 100%;
+  font-size: 0.85rem;
+}
+.package-row .pkg-remove {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #fca5a5;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  line-height: 1;
+}
+@media (max-width: 420px) {
+  .package-row { grid-template-columns: 1fr 1fr auto; }
+  .package-row select { grid-column: 1 / -2; }
+}
+.popup-packages .popup-row { font-size: 0.85rem; }
+
+.btn-danger {
+  background: #7f1d1d;
+  color: #fecaca;
+  border: 1px solid #991b1b;
+  font-weight: 700;
+}
+.btn-danger:hover, .btn-danger:active {
+  background: #991b1b;
+  color: #fff;
+}
+.danger-zone {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px solid #7f1d1d;
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.15);
+}
+.danger-zone-title {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: #fecaca;
+}

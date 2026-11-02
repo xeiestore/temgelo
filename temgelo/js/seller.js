@@ -75,7 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("reg-unit")?.addEventListener("change", updateRegQtyLabel);
   updateRegQtyLabel();
   updateDashQtyLabel();
+  renderPackageRows("dash-packages", me.packages || []);
+  document.getElementById("btn-add-package")?.addEventListener("click", () => addPackageRow("dash-packages"));
+  document.getElementById("btn-reg-add-package")?.addEventListener("click", () => addPackageRow("reg-packages"));
+  renderPackageRows("dash-packages", []);
+  renderPackageRows("reg-packages", []);
   document.getElementById("btn-save-profile")?.addEventListener("click", () => saveMe("profile"));
+  document.getElementById("btn-delete-account")?.addEventListener("click", deleteMyAccount);
   document.getElementById("link-to-profile")?.addEventListener("click", (e) => {
     e.preventDefault();
     try {
@@ -442,6 +448,7 @@ async function doRegister() {
     price: document.getElementById("reg-price").value.trim(),
     unit: document.getElementById("reg-unit")?.value === "kg" ? "kg" : "baldes",
     buckets: parseFloat(document.getElementById("reg-buckets").value) || 0,
+    packages: collectPackages("reg-packages"),
     freeze: document.getElementById("reg-freeze").value,
     available: document.getElementById("reg-available").checked
   };
@@ -501,6 +508,39 @@ async function doRegister() {
   }
 }
 
+async function deleteMyAccount() {
+  if (!me || !token) {
+    alert("Sessão expirada. Entre de novo.");
+    return;
+  }
+  const ok = confirm(
+    "Eliminar a sua conta de forma permanente?\n\n" +
+      "• Some do mapa público\n" +
+      "• Perfil e stock são apagados\n" +
+      "• Não pode ser desfeito\n\n" +
+      "Escreva OK na próxima pergunta para confirmar."
+  );
+  if (!ok) return;
+  const typed = prompt('Para confirmar, escreva ELIMINAR:');
+  if (!typed || typed.trim().toUpperCase() !== "ELIMINAR") {
+    alert("Conta não eliminada.");
+    return;
+  }
+  try {
+    await api("/seller/me", { method: "DELETE" });
+    token = null;
+    me = null;
+    clearToken();
+    try {
+      sessionStorage.removeItem("temgelo_seller_view");
+    } catch (_) {}
+    alert("Conta eliminada. Já não aparece no mapa.");
+    window.location.replace("./index.html");
+  } catch (err) {
+    alert(err.message || "Não foi possível eliminar a conta.");
+  }
+}
+
 async function doLogout() {
   try {
     await api("/auth/logout", { method: "POST" });
@@ -533,6 +573,7 @@ function fillDash() {
   if (unitEl) unitEl.value = me.unit === "kg" ? "kg" : "baldes";
   document.getElementById("dash-freeze").value = me.freeze || "muito_congelado";
   updateDashQtyLabel();
+  renderPackageRows("dash-packages", me.packages || []);
   document.getElementById("dash-price").value = me.price || "";
   document.getElementById("dash-available").checked = !!me.available;
   document.getElementById("dash-name").value = me.name || "";
@@ -569,6 +610,86 @@ function fillDash() {
 }
 
 
+
+function renderPackageRows(containerId, packages) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  const list = Array.isArray(packages) && packages.length ? packages : [];
+  box.innerHTML = "";
+  if (!list.length) {
+    // one empty row to start
+    list.push({ amount: "", unit: "kg", price: "" });
+  }
+  list.forEach((pkg, idx) => {
+    const row = document.createElement("div");
+    row.className = "package-row";
+    row.innerHTML =
+      '<div class="form-group" style="margin:0">' +
+      '<label>Qtd</label>' +
+      '<input type="number" min="0" step="any" class="pkg-amount" value="' +
+      (pkg.amount ?? "") +
+      '" placeholder="2" />' +
+      "</div>" +
+      '<div class="form-group" style="margin:0">' +
+      "<label>Unidade</label>" +
+      '<select class="pkg-unit">' +
+      '<option value="kg"' +
+      (pkg.unit === "baldes" ? "" : " selected") +
+      ">kg</option>" +
+      '<option value="baldes"' +
+      (pkg.unit === "baldes" ? " selected" : "") +
+      ">baldes</option>" +
+      "</select></div>" +
+      '<div class="form-group" style="margin:0">' +
+      "<label>Preço (Kz)</label>" +
+      '<input type="text" class="pkg-price" value="' +
+      (pkg.price ?? "") +
+      '" placeholder="150" />' +
+      "</div>" +
+      '<button type="button" class="pkg-remove" aria-label="Remover">×</button>';
+    row.querySelector(".pkg-remove").addEventListener("click", () => {
+      row.remove();
+      if (!box.querySelector(".package-row")) {
+        renderPackageRows(containerId, []);
+      }
+    });
+    box.appendChild(row);
+  });
+}
+
+function collectPackages(containerId) {
+  const box = document.getElementById(containerId);
+  if (!box) return [];
+  const out = [];
+  box.querySelectorAll(".package-row").forEach((row) => {
+    const amount = parseFloat(row.querySelector(".pkg-amount")?.value);
+    const unit = row.querySelector(".pkg-unit")?.value === "baldes" ? "baldes" : "kg";
+    const price = String(row.querySelector(".pkg-price")?.value || "").trim();
+    if (amount > 0 && price) out.push({ amount, unit, price });
+  });
+  return typeof normalizePackages === "function" ? normalizePackages(out) : out;
+}
+
+function addPackageRow(containerId) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  const existing = collectPackages(containerId);
+  existing.push({ amount: "", unit: "kg", price: "" });
+  // re-render loses empty trailing - append one empty row manually
+  const row = document.createElement("div");
+  row.className = "package-row";
+  row.innerHTML =
+    '<div class="form-group" style="margin:0"><label>Qtd</label><input type="number" min="0" step="any" class="pkg-amount" placeholder="2" /></div>' +
+    '<div class="form-group" style="margin:0"><label>Unidade</label><select class="pkg-unit"><option value="kg" selected>kg</option><option value="baldes">baldes</option></select></div>' +
+    '<div class="form-group" style="margin:0"><label>Preço (Kz)</label><input type="text" class="pkg-price" placeholder="150" /></div>' +
+    '<button type="button" class="pkg-remove" aria-label="Remover">×</button>';
+  row.querySelector(".pkg-remove").addEventListener("click", () => {
+    row.remove();
+    if (!box.querySelector(".package-row")) renderPackageRows(containerId, []);
+  });
+  box.appendChild(row);
+}
+
 function updateDashQtyLabel() {
   const unit = document.getElementById("dash-unit")?.value === "kg" ? "kg" : "baldes";
   const label = document.getElementById("dash-qty-label");
@@ -588,6 +709,7 @@ async function saveMe(mode) {
     body.unit = document.getElementById("dash-unit")?.value === "kg" ? "kg" : "baldes";
     body.freeze = document.getElementById("dash-freeze").value;
     body.price = document.getElementById("dash-price").value.trim();
+    body.packages = collectPackages("dash-packages");
     body.available = document.getElementById("dash-available").checked;
   } else {
     body.name = document.getElementById("dash-name").value.trim();

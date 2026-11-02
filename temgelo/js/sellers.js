@@ -156,7 +156,33 @@ function formatStockQty(seller, textsObj) {
   return n + " " + (stockUnitLabel("baldes", textsObj) || "baldes").toLowerCase();
 }
 
-// Map pin: green when available and qty > 0 (baldes or kg) — no 24h expiry
+/** packages: [{ amount, unit: "kg"|"baldes", price }] — multi size/price list */
+function normalizePackages(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const row of list) {
+    if (!row || typeof row !== "object") continue;
+    const amount = parseFloat(row.amount);
+    const price = String(row.price ?? "").trim();
+    if (!(amount > 0) || !price) continue;
+    out.push({
+      amount,
+      unit: row.unit === "kg" ? "kg" : "baldes",
+      price
+    });
+    if (out.length >= 12) break; // keep popup readable
+  }
+  return out;
+}
+
+function formatPackageLine(pkg) {
+  const u = pkg.unit === "kg" ? "kg" : "balde" + (Number(pkg.amount) === 1 ? "" : "s");
+  return pkg.amount + " " + u + " — " + pkg.price + " Kz";
+}
+
+// Map pin: green when available and (qty > 0 OR has price packages)
 function isEffectivelyAvailable(seller) {
-  return !!(seller && seller.available && Number(seller.buckets) > 0);
+  if (!seller || !seller.available) return false;
+  if (Number(seller.buckets) > 0) return true;
+  return normalizePackages(seller.packages).length > 0;
 }

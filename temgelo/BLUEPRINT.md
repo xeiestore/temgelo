@@ -81,12 +81,12 @@ Changes should appear within about 0–30 seconds (or immediately on refresh).
 | id, username, email, passwordHash/Salt | System |
 | name, lat, lng, neighborhood, notes, whatsapp, phone | Profile (whatsapp/phone = map contact) |
 | payments | numerario, multicaixa, unitel, other |
-| price, freeze, buckets, unit (`baldes`|`kg`), available | Stock |
+| price, packages[{amount,unit,price}], freeze, buckets, unit, available | Stock |
 | status | `approved` (active) \| `banned` — new signups are always `approved` |
 | createdAt, updatedAt | Timestamps |
 
 ### 24-hour rule
-Green on map if `available && buckets > 0` (qty in **baldes** or **kg** via `unit`; no 24h expiry).
+Green on map if `available` and (`buckets > 0` **or** non-empty `packages`). Packages = multi size/price list (e.g. 2 kg @ 150 Kz, 5 kg @ 400 Kz) for packaged ice.
 
 ### Map visibility
 Anyone **not banned** can appear in the public catalog. There is no approval step before map visibility.

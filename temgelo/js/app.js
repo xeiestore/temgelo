@@ -300,6 +300,25 @@ function renderMarkers() {
   });
 }
 
+function packagesPopupHtml(seller) {
+  const pkgs = typeof normalizePackages === "function" ? normalizePackages(seller.packages) : [];
+  if (pkgs.length) {
+    const lines = pkgs
+      .map(
+        (p) =>
+          `<div class="popup-row"><span>${escapeHtml(
+            formatPackageLine(p)
+          )}</span></div>`
+      )
+      .join("");
+    return `<div class="popup-packages"><div class="popup-row"><span><strong>Preços</strong></span></div>${lines}</div>`;
+  }
+  return `<div class="popup-row">
+      <span>${escapeHtml(texts.labelPrice || DEFAULT_TEXTS.labelPrice)}</span>
+      <span>${seller.price ? escapeHtml(String(seller.price)) + " Kz" : "—"}</span>
+    </div>`;
+}
+
 function createPopup(seller, available) {
   const freeze = freezeLabel(seller.freeze);
   const updated = seller.updatedAt
@@ -352,10 +371,7 @@ function createPopup(seller, available) {
       <span>${escapeHtml(texts.labelFreeze || DEFAULT_TEXTS.labelFreeze)}</span>
       <span>${escapeHtml(freeze)}</span>
     </div>
-    <div class="popup-row">
-      <span>${escapeHtml(texts.labelPrice || DEFAULT_TEXTS.labelPrice)}</span>
-      <span>${seller.price ? seller.price + " Kz" : "—"}</span>
-    </div>
+    ${packagesPopupHtml(seller)}
     <div class="popup-row">
       <span>${escapeHtml(texts.labelUpdated || DEFAULT_TEXTS.labelUpdated)}</span>
       <span>${updated}</span>

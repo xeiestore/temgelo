@@ -194,6 +194,12 @@
             </div>
           </div>
           <div class="form-group">
+            <label>Tabela de preços (opcional — vários tamanhos)</label>
+            <p class="text-sm text-muted mb-1">Útil para gelo embalado: 2 kg, 5 kg, etc.</p>
+            <div id="reg-packages" class="packages-list"></div>
+            <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-reg-add-package">+ Adicionar tamanho / preço</button>
+          </div>
+          <div class="form-group">
             <label>Congelamento</label>
             <select id="reg-freeze">
               <option value="muito_congelado">Muito congelado</option>
@@ -241,8 +247,14 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Preço (Kz)</label>
-          <input type="text" id="dash-price" />
+          <label>Preço simples (Kz) — se só vende um tipo</label>
+          <input type="text" id="dash-price" placeholder="ex.: 1500" />
+        </div>
+        <div class="form-group">
+          <label>Tabela de preços (vários tamanhos)</label>
+          <p class="text-sm text-muted mb-1">Ex.: 2 kg a 150 Kz, 5 kg a 400 Kz. Deixe vazio se usar só o preço simples.</p>
+          <div id="dash-packages" class="packages-list"></div>
+          <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-add-package">+ Adicionar tamanho / preço</button>
         </div>
         <label class="checkbox-row">
           <input type="checkbox" id="dash-available" />
@@ -306,6 +318,13 @@
         <p class="text-sm text-center mt-2">
           <a href="seller.html?view=stock#stock" class="seller-view-switch" id="link-to-stock">← Ir para Meu stock</a>
         </p>
+        <div class="danger-zone mt-2">
+          <h4 class="danger-zone-title">Zona de perigo</h4>
+          <p class="text-sm text-muted mb-1">
+            Apaga a conta, o stock e a localização do mapa público. Esta acção não pode ser desfeita.
+          </p>
+          <button class="btn btn-danger btn-block" type="button" id="btn-delete-account">Eliminar a minha conta</button>
+        </div>
       </div>
     </section>
   </main>

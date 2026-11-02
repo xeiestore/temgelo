@@ -8,6 +8,7 @@
  *   POST /auth/logout      – invalidate session
  *   GET  /seller/me        – current seller profile (Bearer token)
  *   PATCH /seller/me       – update own profile / stock
+ *   DELETE /seller/me      – seller deletes own account (removes from map)
  *   GET  /admin/sellers    – list all accounts (admin password)
  *   POST /admin/sellers    – admin create account (live on map)
  *   PATCH /admin/sellers   – admin update account + stock
@@ -29,7 +30,7 @@
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization"
 };
 
@@ -199,6 +200,24 @@ function normalizePayments(raw) {
   };
 }
 
+function normalizePackages(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const row of list) {
+    if (!row || typeof row !== "object") continue;
+    const amount = parseFloat(row.amount);
+    const price = String(row.price ?? "").trim();
+    if (!(amount > 0) || !price) continue;
+    out.push({
+      amount,
+      unit: row.unit === "kg" ? "kg" : "baldes",
+      price
+    });
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
 function publicSeller(s) {
   return {
     id: s.id,
@@ -208,6 +227,7 @@ function publicSeller(s) {
     available: !!s.available,
     buckets: Number(s.buckets) || 0,
     unit: s.unit === "kg" ? "kg" : "baldes",
+    packages: normalizePackages(s.packages),
     freeze: s.freeze || "muito_congelado",
     price: s.price || "",
     whatsapp: s.whatsapp || "",
@@ -434,6 +454,7 @@ export default {
           freeze: body.freeze || "muito_congelado",
           buckets: Math.max(0, parseFloat(body.buckets) || 0),
           unit: body.unit === "kg" ? "kg" : "baldes",
+          packages: normalizePackages(body.packages),
           available: !!body.available,
           notes: String(body.notes || "").trim(),
           status: "approved",
@@ -536,6 +557,7 @@ export default {
         if (body.freeze != null) s.freeze = body.freeze;
         if (body.buckets != null) s.buckets = Math.max(0, parseFloat(body.buckets) || 0);
         if (body.unit != null) s.unit = body.unit === "kg" ? "kg" : "baldes";
+        if (body.packages != null) s.packages = normalizePackages(body.packages);
         if (body.available != null) s.available = !!body.available;
         if (body.notes != null) s.notes = String(body.notes).trim();
         if (body.whatsapp != null) {
@@ -588,6 +610,27 @@ export default {
 
         const { passwordHash, passwordSalt, ...safe } = s;
         return respond({ ok: true, seller: safe });
+      }
+
+      // Seller deletes own account
+      if (request.method === "DELETE" && path.endsWith("/seller/me")) {
+        const session = await getSession(env, request);
+        if (!session) return respond("Unauthorized", 401);
+        const seller = session.seller;
+        const sellerId = seller.id;
+        if (seller.username) await env.SELLERS.delete("user:" + seller.username);
+        if (seller.email) await env.SELLERS.delete("email:" + seller.email);
+        await env.SELLERS.delete("seller:" + sellerId);
+        const ids = (await getIndex(env)).filter((x) => x !== sellerId);
+        await setIndex(env, ids);
+        // Invalidate this session
+        if (session.token) await env.SELLERS.delete("session:" + session.token);
+        try {
+          await rebuildPublicCatalog(env);
+        } catch (e) {
+          console.error("catalog after self-delete failed", e);
+        }
+        return respond({ ok: true, status: "deleted" });
       }
 
       if (request.method === "GET" && path.endsWith("/admin/sellers")) {
@@ -686,6 +729,7 @@ export default {
           freeze: body.freeze || "muito_congelado",
           buckets: Math.max(0, parseFloat(body.buckets) || 0),
           unit: body.unit === "kg" ? "kg" : "baldes",
+          packages: normalizePackages(body.packages),
           available: body.available !== false,
           notes: String(body.notes || "").trim(),
           status: "approved",
@@ -745,6 +789,7 @@ export default {
         if (body.freeze != null) s.freeze = body.freeze || s.freeze;
         if (body.buckets != null) s.buckets = Math.max(0, parseFloat(body.buckets) || 0);
         if (body.unit != null) s.unit = body.unit === "kg" ? "kg" : "baldes";
+        if (body.packages != null) s.packages = normalizePackages(body.packages);
         if (body.available != null) s.available = !!body.available;
         if (body.payments != null) s.payments = normalizePayments(body.payments);
 
