@@ -62,8 +62,9 @@ Changes should appear within about 0–30 seconds (or immediately on refresh).
 2. **Register:** public name, **username** (required), **email** (optional), password, map pin; WhatsApp / phone optional (map contact); payments optional.
 3. Account stored in **KV** with **`status: "approved"`** (active immediately — **no pending gate**).
 4. Worker rebuilds the public catalog on register so the seller can appear on the map right away.
-5. Admin → **Moderação**: **Bloquear** (removes from map), **Reactivar** (after ban), **Apagar**. UI labels accounts **Activo** / **Bloqueado** only.
-6. Seller updates stock/profile; if not banned, catalog is republished automatically.
+5. Admin → **Vendedores** → **+ Adicionar / Guardar** creates or updates a **real** KV account (`POST` / `PATCH` `/admin/sellers`) and rebuilds the public catalog immediately (optional username/password; auto-generated if empty).
+6. Admin → **Moderação**: **Bloquear** (removes from map), **Reactivar** (after ban), **Apagar**. UI labels accounts **Activo** / **Bloqueado** only.
+7. Seller updates stock/profile; if not banned, catalog is republished automatically.
 
 ### Auth
 - **Username** (required, 3–24: `a-z` `0-9` `_`) and optional **email**
@@ -103,6 +104,8 @@ Base: `https://tem-gelo-publish.xeieloja.workers.dev`
 | GET | `/seller/me` | Bearer |
 | PATCH | `/seller/me` | Bearer |
 | GET | `/admin/sellers?password=` | admin |
+| POST | `/admin/sellers` | admin create account (approved + catalog rebuild) |
+| PATCH | `/admin/sellers` | admin update account / stock + catalog rebuild |
 | POST | `/admin/moderate` | admin (`approve` = reactivate \| `ban` \| `delete`) |
 | POST | `/admin/republish` | admin |
 | POST | `/report` | public (in-app report, not WhatsApp) |
@@ -145,9 +148,10 @@ Never commit the real password to a public repo.
 
 ## Hamburger menu
 - **Public map (guest):** Entrar, Criar conta, Segurança, Instalar app, Reportar um problema
-- **Public map (logged-in seller):** Área do vendedor (stock, perfil, painel, sair), Segurança, Instalar app, Reportar
-- **Seller portal:** Stock, Perfil, mapa público, Sair
+- **Public map (logged-in seller):** Meu stock (`seller.html#stock`), Perfil (`seller.html#perfil`), Sair, Segurança, Instalar app, Reportar — no single “Área do vendedor” link
+- **Seller portal:** Meu stock, Perfil, mapa público, Sair
 - Menu opens from the **left**
+- **Login flash:** if a session token exists, `seller.html` hides the Entrar screen before paint (`html.seller-has-session`) so the dashboard shows immediately while `/seller/me` loads
 
 ## PWA
 - `start_url`: `/index.html` (always the map with hamburger)
@@ -157,8 +161,14 @@ Never commit the real password to a public repo.
   - Chromium: native prompt via `beforeinstallprompt` when available
   - **iOS:** no one-tap install API; **Instalar app** shows a guided sheet (Safari → Partilhar → Adicionar ao Ecrã Principal)
 
-## Safety
-Prominent red banner + report via WhatsApp and in-app `/report`. Number editable in Admin → Textos.
+## Safety + bottom ads
+- Red **safety banner** shows on map load, auto-hides after **10 seconds** (or on ×). Menu → Segurança shows it again temporarily.
+- After hide, the same bottom strip becomes the **partner ad** slot (`#ad-banner`).
+- **Editable in Admin → Textos** (saved to KV `meta:texts` with **Guardar textos** / **Publicar**):
+  - `adTitle`, `adBody`, `adCta`, `adWaMessage`
+  - CTA opens WhatsApp using `adminWhatsApp` + `adWaMessage`
+- Leaflet **+/-** zoom controls sit **above** that bottom strip (raised via CSS).
+- Report via WhatsApp and in-app `/report`. Admin WhatsApp number editable in Admin → Textos.
 
 ## Deploy checklist
 1. KV namespace id in `wrangler.toml`
@@ -167,12 +177,12 @@ Prominent red banner + report via WhatsApp and in-app `/report`. Number editable
 4. `npx wrangler deploy`
 5. Deploy static files to Cloudflare Pages (include `seller.html`, `install.js`)
 6. Admin → **Publicar** / **Republicar** once if catalog empty
-7. Test: register → update stock → map within ~30s (no approval wait); ban → disappears from map
+7. Test: register **or** Admin → Adicionar → map within ~30s; ban → disappears from map
 
 ## Current status
 - Public map + left hamburger (auth-aware)
 - Seller accounts: register → **active immediately** (no pending)
-- Admin: block / reactivate / delete; copy talks about **activos**, not approvals
+- Admin Vendedores: create/edit real accounts (live on map); Moderação: block / reactivate / delete
 - Live catalog via Worker KV (`GET /catalog`) + 30s poll
 - Cloudinary backup with CDN invalidate
 - PWA installable (native on Chromium; guided sheet on iOS)

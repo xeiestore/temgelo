@@ -54,17 +54,27 @@
     <div class="legend-item"><span class="dot red"></span> <span id="legend-no">Sem gelo / expirado</span></div>
   </div>
 
-  <!-- Safety banner -->
-  <div class="safety-banner" id="safety-banner">
-    <div>
-      <strong id="safety-title">Atenção de Segurança:</strong>
-      <span id="safety-body">
-        Se uma zona ou bairro parecer suspeito, não entre.
-        Criminosos podem usar a app para atrair pessoas.
-        Confirme sempre por telefone/WhatsApp antes de ir e prefira zonas conhecidas.
-      </span>
+  <!-- Bottom slot: safety (10s) then partner ads -->
+  <div class="bottom-slot" id="bottom-slot">
+    <div class="safety-banner" id="safety-banner">
+      <div>
+        <strong id="safety-title">Atenção de Segurança:</strong>
+        <span id="safety-body">
+          Se uma zona ou bairro parecer suspeito, não entre.
+          Criminosos podem usar a app para atrair pessoas.
+          Confirme sempre por telefone/WhatsApp antes de ir e prefira zonas conhecidas.
+        </span>
+      </div>
+      <button type="button" aria-label="Fechar" id="safety-close-btn">×</button>
     </div>
-    <button type="button" aria-label="Fechar" onclick="document.getElementById('safety-banner').classList.add('hidden')">×</button>
+    <div class="ad-banner hidden" id="ad-banner" aria-label="Publicidade">
+      <span class="ad-banner-label">Anuncie</span>
+      <div class="ad-banner-body" id="ad-banner-body">
+        <strong id="ad-banner-title">Negócio angolano?</strong>
+        <span id="ad-banner-text"> Coloque a sua marca aqui — lojas, serviços, entregas. Quem procura gelo em Angola já está a ver este espaço.</span>
+      </div>
+      <a class="ad-banner-cta" id="ad-banner-cta" href="#" target="_blank" rel="noopener">Quero anunciar</a>
+    </div>
   </div>
 
   <!-- Report modal (sends to admin panel, not WhatsApp) -->
@@ -190,7 +200,8 @@
         if (loggedIn) {
           nav.innerHTML =
             userLine +
-            '<a href="seller.html" class="drawer-link">' + iconStock + ' ' + menuText("menuSellerSection", "Área do vendedor") + '</a>' +
+            '<a href="seller.html#stock" class="drawer-link">' + iconStock + ' ' + menuText("menuStock", "Meu stock") + '</a>' +
+            '<a href="seller.html#perfil" class="drawer-link">' + iconUser + ' ' + menuText("menuProfile", "Perfil") + '</a>' +
             '<a href="#" class="drawer-link drawer-link-danger" id="public-seller-logout">' + iconLogout + ' ' + menuText("menuLogout", "Sair") + '</a>' +
             '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' ' + menuText("menuSafety", "Segurança") + '</a>' +
             installLink +
@@ -207,7 +218,8 @@
         document.getElementById("link-safety")?.addEventListener("click", (e) => {
           e.preventDefault();
           close();
-          document.getElementById("safety-banner")?.classList.remove("hidden");
+          if (typeof window.showSafetyBanner === "function") window.showSafetyBanner();
+          else document.getElementById("safety-banner")?.classList.remove("hidden");
         });
         document.getElementById("link-report")?.addEventListener("click", (e) => {
           e.preventDefault();
@@ -223,9 +235,11 @@
           e.preventDefault();
           localStorage.removeItem(TOKEN_KEY);
           sessionStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(PROFILE_KEY);
+          sessionStorage.removeItem(PROFILE_KEY);
           close();
           window.renderPublicDrawerNav = renderNav;
-      renderNav();
+          renderNav();
         });
       }
 

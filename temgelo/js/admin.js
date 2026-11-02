@@ -32,6 +32,10 @@ const TEXT_FIELDS = [
   "reportMessage",
   "countFormat",
   "adminWhatsApp",
+  "adTitle",
+  "adBody",
+  "adCta",
+  "adWaMessage",
   "freezeMuito",
   "freezeParcial",
   "freezeFraco",
@@ -103,8 +107,6 @@ function showSection(name) {
 
 // ---------- Load ----------
 async function loadSellers() {
-  // 1. Start from defaults
-  sellers = JSON.parse(JSON.stringify(DEFAULT_SELLERS));
   texts = { ...DEFAULT_TEXTS };
 
   // Local draft texts (if any)
@@ -113,42 +115,63 @@ async function loadSellers() {
     if (localTexts) texts = { ...DEFAULT_TEXTS, ...JSON.parse(localTexts) };
   } catch (_) {}
 
-  // 2. Try live catalog (Worker first – instant after publish)
+  // Prefer real accounts (source of truth for the map)
   try {
-    let res = await fetch(CATALOG_URL + "?t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) {
-      res = await fetch(CATALOG_FALLBACK + "?t=" + Date.now(), { cache: "no-store" });
-    }
+    const res = await fetch(
+      API_BASE + "/admin/sellers?password=" + encodeURIComponent(ADMIN_PASSWORD) + "&t=" + Date.now(),
+      { cache: "no-store" }
+    );
     if (res.ok) {
       const data = await res.json();
-      if (data && Array.isArray(data.sellers)) {
-        sellers = data.sellers;
-        document.getElementById("catalog-status").textContent =
-          `Catálogo remoto carregado (${sellers.length} vendedores) – ${data.updatedAt || ""}`;
+      sellers = Array.isArray(data.sellers) ? data.sellers : [];
+      document.getElementById("catalog-status").textContent =
+        `Contas no servidor (${sellers.length}) – ${new Date().toLocaleString("pt-AO")}`;
+    } else {
+      throw new Error("HTTP " + res.status);
+    }
+  } catch (err) {
+    // Fallback: public catalog (map view only – no full account fields)
+    try {
+      let res = await fetch(CATALOG_URL + "?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) {
+        res = await fetch(CATALOG_FALLBACK + "?t=" + Date.now(), { cache: "no-store" });
       }
+      if (res.ok) {
+        const data = await res.json();
+        sellers = Array.isArray(data.sellers) ? data.sellers : [];
+        document.getElementById("catalog-status").textContent =
+          `Catálogo público (${sellers.length}) – contas admin indisponíveis`;
+        if (data.texts && typeof data.texts === "object") {
+          texts = { ...DEFAULT_TEXTS, ...data.texts };
+        }
+        if (data.images && typeof data.images === "object") {
+          fillImagesForm(data.images);
+        }
+      } else {
+        sellers = [];
+        document.getElementById("catalog-status").textContent =
+          "Sem dados – Worker indisponível";
+      }
+    } catch (_) {
+      sellers = [];
+      document.getElementById("catalog-status").textContent =
+        "Sem dados – Worker indisponível";
+    }
+  }
+
+  // Always try to refresh texts/images from public catalog
+  try {
+    const res = await fetch(CATALOG_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
       if (data && data.texts && typeof data.texts === "object") {
         texts = { ...DEFAULT_TEXTS, ...data.texts };
       }
       if (data && data.images && typeof data.images === "object") {
         fillImagesForm(data.images);
       }
-    } else {
-      throw new Error("HTTP " + res.status);
     }
-  } catch (err) {
-    // 3. Fallback to localStorage
-    const local = localStorage.getItem("temgelo_sellers");
-    if (local) {
-      try {
-        sellers = JSON.parse(local);
-        document.getElementById("catalog-status").textContent =
-          "A usar rascunho local (catálogo remoto indisponível)";
-      } catch (_) {}
-    } else {
-      document.getElementById("catalog-status").textContent =
-        "A usar dados de exemplo (ainda não publicou nada)";
-    }
-  }
+  } catch (_) {}
 
   fillTextsForm();
   renderList();
@@ -213,15 +236,17 @@ function renderList() {
 
   container.innerHTML = sellers
     .map((s) => {
-      const avail = isEffectivelyAvailable(s);
-      const statusClass = avail ? "ok" : "no";
-      const statusText = avail ? "Tem gelo" : "Sem / expirado";
+      const banned = s.status === "banned";
+      const avail = !banned && isEffectivelyAvailable(s);
+      const statusClass = banned ? "no" : avail ? "ok" : "no";
+      const statusText = banned ? "Bloqueado" : avail ? "Tem gelo" : "Sem / expirado";
+      const userBit = s.username ? "@" + escapeHtml(s.username) + " · " : "";
       return `
         <div class="seller-item">
           <div class="info">
             <div class="name">${escapeHtml(s.name)}</div>
             <div class="meta">
-              ${escapeHtml(s.neighborhood || "")} · ${s.buckets} baldes · ${s.price || "—"} Kz
+              ${userBit}${escapeHtml(s.neighborhood || "")} · ${s.buckets ?? 0} baldes · ${s.price || "—"} Kz
               <span class="status-pill ${statusClass}">${statusText}</span>
             </div>
           </div>
@@ -241,6 +266,8 @@ function openSellerModal(id = null) {
   editingId = id;
   const modal = document.getElementById("seller-modal");
   const title = document.getElementById("modal-title");
+  const userEl = document.getElementById("f-username");
+  const passEl = document.getElementById("f-seller-password");
 
   if (id) {
     const s = sellers.find((x) => x.id === id);
@@ -248,6 +275,15 @@ function openSellerModal(id = null) {
     title.textContent = "Editar vendedor";
     document.getElementById("seller-id").value = s.id;
     document.getElementById("f-name").value = s.name || "";
+    if (userEl) {
+      userEl.value = s.username || "";
+      userEl.disabled = true;
+      userEl.placeholder = s.username || "";
+    }
+    if (passEl) {
+      passEl.value = "";
+      passEl.placeholder = "deixe vazio para não alterar";
+    }
     document.getElementById("f-lat").value = s.lat ?? "";
     document.getElementById("f-lng").value = s.lng ?? "";
     document.getElementById("f-neighborhood").value = s.neighborhood || "";
@@ -267,6 +303,15 @@ function openSellerModal(id = null) {
     title.textContent = "Adicionar vendedor";
     document.getElementById("seller-id").value = "";
     document.getElementById("f-name").value = "";
+    if (userEl) {
+      userEl.value = "";
+      userEl.disabled = false;
+      userEl.placeholder = "auto se vazio";
+    }
+    if (passEl) {
+      passEl.value = "";
+      passEl.placeholder = "auto se vazia";
+    }
     document.getElementById("f-lat").value = "";
     document.getElementById("f-lng").value = "";
     document.getElementById("f-neighborhood").value = "";
@@ -291,21 +336,13 @@ function closeSellerModal() {
   editingId = null;
 }
 
-function saveSeller() {
-  const name = document.getElementById("f-name").value.trim();
-  const lat = parseFloat(document.getElementById("f-lat").value);
-  const lng = parseFloat(document.getElementById("f-lng").value);
-
-  if (!name || isNaN(lat) || isNaN(lng)) {
-    alert("Nome, latitude e longitude são obrigatórios.");
-    return;
-  }
-
-  const data = {
-    id: document.getElementById("seller-id").value || "s" + Date.now(),
-    name,
-    lat,
-    lng,
+function readSellerFormPayload() {
+  return {
+    name: document.getElementById("f-name").value.trim(),
+    lat: parseFloat(document.getElementById("f-lat").value),
+    lng: parseFloat(document.getElementById("f-lng").value),
+    username: (document.getElementById("f-username")?.value || "").trim(),
+    sellerPassword: (document.getElementById("f-seller-password")?.value || "").trim(),
     neighborhood: document.getElementById("f-neighborhood").value.trim(),
     buckets: parseInt(document.getElementById("f-buckets").value, 10) || 0,
     price: document.getElementById("f-price").value.trim(),
@@ -319,42 +356,134 @@ function saveSeller() {
       other: document.getElementById("f-pay-other").value.trim()
     },
     notes: document.getElementById("f-notes").value.trim(),
-    available: document.getElementById("f-available").checked,
-    updatedAt: new Date().toISOString()
+    available: document.getElementById("f-available").checked
   };
+}
 
-  const idx = sellers.findIndex((s) => s.id === data.id);
-  if (idx >= 0) {
-    sellers[idx] = data;
-  } else {
-    sellers.push(data);
+async function saveSeller() {
+  const data = readSellerFormPayload();
+  if (!data.name || isNaN(data.lat) || isNaN(data.lng)) {
+    alert("Nome, latitude e longitude são obrigatórios.");
+    return;
   }
 
-  saveLocal();
-  renderList();
-  closeSellerModal();
+  const existingId = document.getElementById("seller-id").value.trim();
+  const btn = document.querySelector("#seller-modal .btn-green");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "A guardar…";
+  }
+
+  try {
+    if (existingId) {
+      const res = await fetch(API_BASE + "/admin/sellers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: ADMIN_PASSWORD,
+          sellerId: existingId,
+          ...data
+        })
+      });
+      const text = await res.text();
+      let payload = null;
+      try {
+        payload = text ? JSON.parse(text) : null;
+      } catch (_) {}
+      if (!res.ok) {
+        throw new Error((payload && payload.error) || text || "HTTP " + res.status);
+      }
+      alert("Vendedor actualizado e publicado no mapa.");
+    } else {
+      const res = await fetch(API_BASE + "/admin/sellers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: ADMIN_PASSWORD,
+          ...data
+        })
+      });
+      const text = await res.text();
+      let payload = null;
+      try {
+        payload = text ? JSON.parse(text) : null;
+      } catch (_) {}
+      if (!res.ok) {
+        throw new Error((payload && payload.error) || text || "HTTP " + res.status);
+      }
+      const u = payload && payload.seller && payload.seller.username;
+      const gen = payload && payload.generatedPassword;
+      if (gen) {
+        alert(
+          "Conta criada e no mapa.\n\nUtilizador: " +
+            (u || "—") +
+            "\nPalavra-passe gerada: " +
+            gen +
+            "\n\nGuarde estes dados para o vendedor entrar em seller.html."
+        );
+      } else {
+        alert(
+          "Conta criada e publicada no mapa." +
+            (u ? "\nUtilizador: " + u : "")
+        );
+      }
+    }
+    closeSellerModal();
+    await loadSellers();
+  } catch (err) {
+    alert("Erro ao guardar: " + (err && err.message ? err.message : String(err)));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Guardar";
+    }
+  }
 }
 
 function editSeller(id) {
   openSellerModal(id);
 }
 
-function deleteSeller(id) {
-  if (!confirm("Apagar este vendedor?")) return;
-  sellers = sellers.filter((s) => s.id !== id);
-  saveLocal();
-  renderList();
+async function deleteSeller(id) {
+  if (!confirm("Apagar este vendedor da conta e do mapa?")) return;
+  try {
+    const res = await fetch(API_BASE + "/admin/moderate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: ADMIN_PASSWORD,
+        sellerId: id,
+        action: "delete"
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadSellers();
+    alert("Apagado.");
+  } catch (err) {
+    alert("Erro: " + (err && err.message ? err.message : String(err)));
+  }
 }
 
-function reconfirm(id) {
+async function reconfirm(id) {
   const s = sellers.find((x) => x.id === id);
   if (!s) return;
-  s.updatedAt = new Date().toISOString();
-  s.available = true;
-  if (s.buckets < 1) s.buckets = 1;
-  saveLocal();
-  renderList();
-  alert("Reconfirmado! Válido por mais 24 horas.");
+  try {
+    const res = await fetch(API_BASE + "/admin/sellers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: ADMIN_PASSWORD,
+        sellerId: id,
+        available: true,
+        buckets: Math.max(1, Number(s.buckets) || 1)
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadSellers();
+    alert("Reconfirmado no servidor! Válido por mais 24 horas no mapa.");
+  } catch (err) {
+    alert("Erro: " + (err && err.message ? err.message : String(err)));
+  }
 }
 
 // ---------- Local draft ----------

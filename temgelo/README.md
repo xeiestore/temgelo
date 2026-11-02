@@ -24,8 +24,10 @@ Full architecture, API, auth, and deploy steps: **[BLUEPRINT.md](./BLUEPRINT.md)
 
 1. **Anyone** can open the public map and see sellers with fresh stock (green = available + buckets > 0 + updated within 24h).
 2. **Sellers** register or log in on `seller.html`. New accounts are **active immediately** (`status: approved`) and can appear on the map as soon as stock is set — **no admin approval step**.
-3. **Admin** manages texts, images, catalog republish, reports, and can **block / reactivate / delete** accounts (block removes them from the map).
-4. Catalog is rebuilt on register, stock/profile update, moderate, and admin publish → KV + Cloudinary; map polls every 30s.
+3. **Admin** manages texts, images, catalog republish, reports, and can **create / edit / block / delete** real accounts (Vendedores → Guardar writes to KV and rebuilds the map immediately).
+4. Catalog is rebuilt on register, admin create/update, stock/profile update, moderate, and admin publish → KV + Cloudinary; map polls every 30s.
+5. **Logged-in map menu:** **Meu stock** and **Perfil** are separate links (no “Área do vendedor”). `seller.html` skips the login flash when a session token is already stored.
+6. **Map chrome:** safety banner auto-hides after 10s; bottom strip then shows partner ads; zoom +/- sit above that strip.
 
 ## Deploy (short)
 

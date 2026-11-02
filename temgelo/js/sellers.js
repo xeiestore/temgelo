@@ -104,6 +104,12 @@ const DEFAULT_TEXTS = {
   reportMessage: "Quero reportar o vendedor \"{name}\" (ID: {id}) no Tem Gelo?. Motivo: ",
   countFormat: "{available} de {total} com gelo",
   adminWhatsApp: "244900000000",
+  adTitle: "Negócio angolano?",
+  adBody:
+    "Coloque a sua marca aqui — lojas, serviços, entregas. Quem procura gelo em Angola já está a ver este espaço.",
+  adCta: "Quero anunciar",
+  adWaMessage:
+    "Olá! Vi o espaço de anúncios no Tem Gelo? e quero anunciar o meu negócio/serviço.",
   freezeMuito: "Muito congelado",
   freezeParcial: "Parcialmente congelado",
   freezeFraco: "Fraco / a derreter",

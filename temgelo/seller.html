@@ -14,6 +14,15 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="seller-body">
+  <!-- Avoid login flash when a session token already exists -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("temgelo_seller_token") || sessionStorage.getItem("temgelo_seller_token");
+        if (t) document.documentElement.classList.add("seller-has-session");
+      } catch (_) {}
+    })();
+  </script>
   <!-- Top bar -->
   <header class="seller-topbar">
     <button type="button" class="hamburger-btn" id="hamburger-btn" aria-label="Menu" aria-expanded="false">
@@ -38,7 +47,7 @@
   </nav>
 
   <main class="seller-main">
-    <!-- Auth screens -->
+    <!-- Auth screens (hidden immediately if seller-has-session — see head script) -->
     <section id="screen-auth" class="seller-screen auth-mode-login">
       <div class="auth-split">
         <!-- Desktop only (Entrar): large brand panel on the left -->
@@ -189,7 +198,7 @@
     <section id="screen-dash" class="seller-screen hidden">
       <div id="status-banner" class="status-banner"></div>
 
-      <div class="card seller-card">
+      <div class="card seller-card" id="section-stock">
         <h3>Stock de gelo</h3>
         <p class="text-sm text-muted mb-2">Actualize sempre que o stock mudar. Verde no mapa só se actualizado nas últimas 24h.</p>
         <div class="form-row">
@@ -217,7 +226,7 @@
         <button class="btn btn-green btn-block mt-2" type="button" id="btn-save-stock">Guardar stock</button>
       </div>
 
-      <div class="card seller-card">
+      <div class="card seller-card" id="section-profile">
         <h3>Perfil</h3>
         <div class="form-group">
           <label>Nome</label>

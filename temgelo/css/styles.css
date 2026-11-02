@@ -77,13 +77,20 @@ html, body {
   margin-left: auto;
 }
 
-/* Safety banner */
-.safety-banner {
+/* Bottom slot: safety (brief) then partner ads */
+.bottom-slot {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1000;
+  pointer-events: none;
+}
+.bottom-slot > * {
+  pointer-events: auto;
+}
+
+.safety-banner {
   background: #7f1d1d;
   color: #fecaca;
   padding: 10px 16px calc(10px + var(--safe-bottom));
@@ -93,6 +100,12 @@ html, body {
   align-items: flex-start;
   gap: 10px;
   box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.safety-banner.is-hiding {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
 }
 
 .safety-banner strong {
@@ -108,6 +121,101 @@ html, body {
   padding: 0 4px;
   line-height: 1;
   flex-shrink: 0;
+}
+
+/* Partner ads strip (replaces safety after auto-hide) */
+.ad-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 12px calc(8px + var(--safe-bottom));
+  background: linear-gradient(90deg, #0f172a 0%, #12253f 50%, #0f172a 100%);
+  border-top: 1px solid #1e3a5f;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.35);
+}
+.ad-banner.hidden {
+  display: none;
+}
+.ad-banner-label {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.18);
+  border: 1px solid #1d4ed8;
+  border-radius: 4px;
+  padding: 3px 7px;
+}
+.ad-banner-body {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: #cbd5e1;
+}
+.ad-banner-body strong {
+  color: #f8fafc;
+  font-weight: 700;
+}
+.ad-banner-cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  white-space: nowrap;
+  border: none;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+.ad-banner-cta:hover,
+.ad-banner-cta:active {
+  background: #1d4ed8;
+  color: #fff !important;
+}
+@media (max-width: 420px) {
+  .ad-banner {
+    gap: 8px;
+    font-size: 0.72rem;
+  }
+  .ad-banner-cta {
+    padding: 7px 10px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Raise Leaflet +/- above bottom ad/safety strip */
+.leaflet-bottom.leaflet-right {
+  bottom: calc(64px + var(--safe-bottom)) !important;
+  margin-bottom: 0 !important;
+}
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+}
+.leaflet-control-zoom a {
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border-bottom-color: #1e293b !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  font-size: 18px !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #1e293b !important;
+  color: #fff !important;
 }
 
 /* Legend */
@@ -1372,4 +1480,12 @@ html, body {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Seller: hide login flash when a session token is already present */
+html.seller-has-session #screen-auth {
+  display: none !important;
+}
+html.seller-has-session #screen-dash {
+  display: block !important;
 }

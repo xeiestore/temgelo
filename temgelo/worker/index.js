@@ -9,6 +9,8 @@
  *   GET  /seller/me        – current seller profile (Bearer token)
  *   PATCH /seller/me       – update own profile / stock
  *   GET  /admin/sellers    – list all accounts (admin password)
+ *   POST /admin/sellers    – admin create account (live on map)
+ *   PATCH /admin/sellers   – admin update account + stock
  *   POST /admin/moderate   – approve | ban | delete seller
  *   POST /admin/republish  – rebuild public catalog from approved sellers
  *   GET  /catalog         – public catalog (KV, no CDN cache)
@@ -598,6 +600,200 @@ export default {
           }
         }
         return respond({ sellers: list });
+      }
+
+      // Admin create real seller account (appears on map after rebuild)
+      if (request.method === "POST" && path.endsWith("/admin/sellers")) {
+        const body = await request.json();
+        if (body.password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+
+        const name = String(body.name || "").trim();
+        const lat = parseFloat(body.lat);
+        const lng = parseFloat(body.lng);
+        if (!name || isNaN(lat) || isNaN(lng)) {
+          return jsonError("Nome, latitude e longitude são obrigatórios.", 400);
+        }
+
+        let username = normalizeUsername(body.username);
+        if (!username) {
+          const base = name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .slice(0, 16);
+          username = (base.length >= 3 ? base : "vendedor") + "_" + randomId("").slice(0, 4);
+        }
+        if (!isValidUsername(username)) {
+          return jsonError(
+            "Nome de utilizador inválido (3–24 caracteres: letras, números ou _).",
+            400
+          );
+        }
+        if (await env.SELLERS.get("user:" + username)) {
+          return jsonError("Este nome de utilizador já está em uso.", 409);
+        }
+
+        const email = normalizeEmail(body.email);
+        if (!isValidEmail(email)) return jsonError("Email inválido.", 400);
+        if (email && (await env.SELLERS.get("email:" + email))) {
+          return jsonError("Este email já está em uso.", 409);
+        }
+
+        const whatsapp = normalizeWhatsApp(body.whatsapp);
+        const phone = normalizePhone(body.phone);
+        if (!isValidWhatsApp(whatsapp)) {
+          return jsonError("WhatsApp inválido. Use 2449… ou deixe vazio.", 400);
+        }
+        if (!isValidPhone(phone)) {
+          return jsonError("Telefone inválido. Use 244… ou deixe vazio.", 400);
+        }
+
+        let plainPassword = String(body.sellerPassword || body.accountPassword || "").trim();
+        let generatedPassword = null;
+        if (plainPassword.length < 6) {
+          const bytes = new Uint8Array(6);
+          crypto.getRandomValues(bytes);
+          plainPassword =
+            "Tg" +
+            Array.from(bytes)
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join("");
+          generatedPassword = plainPassword;
+        }
+
+        const { hash, salt } = await hashPassword(plainPassword);
+        const id = randomId("s");
+        const now = new Date().toISOString();
+        const seller = {
+          id,
+          username,
+          email: email || "",
+          whatsapp: whatsapp || "",
+          phone: phone || "",
+          payments: normalizePayments(body.payments),
+          passwordHash: hash,
+          passwordSalt: salt,
+          name,
+          lat,
+          lng,
+          neighborhood: String(body.neighborhood || "").trim(),
+          price: String(body.price || "").trim(),
+          freeze: body.freeze || "muito_congelado",
+          buckets: Math.max(0, parseInt(body.buckets, 10) || 0),
+          available: body.available !== false,
+          notes: String(body.notes || "").trim(),
+          status: "approved",
+          managedByAdmin: true,
+          createdAt: now,
+          updatedAt: now
+        };
+
+        await saveSeller(env, seller);
+        await env.SELLERS.put("user:" + username, id);
+        if (email) await env.SELLERS.put("email:" + email, id);
+        const ids = await getIndex(env);
+        if (!ids.includes(id)) {
+          ids.push(id);
+          await setIndex(env, ids);
+        }
+
+        try {
+          await rebuildPublicCatalog(env);
+        } catch (e) {
+          console.error("catalog after admin create failed", e);
+        }
+
+        const { passwordHash, passwordSalt, ...safe } = seller;
+        return respond({
+          ok: true,
+          seller: safe,
+          generatedPassword,
+          message: generatedPassword
+            ? "Conta criada. Guarde a palavra-passe gerada para o vendedor."
+            : "Conta criada e publicada no mapa."
+        });
+      }
+
+      // Admin update real seller account / stock
+      if (request.method === "PATCH" && path.endsWith("/admin/sellers")) {
+        const body = await request.json();
+        if (body.password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+        const sellerId = String(body.sellerId || body.id || "").trim();
+        if (!sellerId) return jsonError("sellerId obrigatório.", 400);
+
+        const s = await loadSeller(env, sellerId);
+        if (!s) return jsonError("Vendedor não encontrado.", 404);
+
+        if (body.name != null) s.name = String(body.name).trim() || s.name;
+        if (body.lat != null) {
+          const lat = parseFloat(body.lat);
+          if (!isNaN(lat)) s.lat = lat;
+        }
+        if (body.lng != null) {
+          const lng = parseFloat(body.lng);
+          if (!isNaN(lng)) s.lng = lng;
+        }
+        if (body.neighborhood != null) s.neighborhood = String(body.neighborhood).trim();
+        if (body.notes != null) s.notes = String(body.notes).trim();
+        if (body.price != null) s.price = String(body.price).trim();
+        if (body.freeze != null) s.freeze = body.freeze || s.freeze;
+        if (body.buckets != null) s.buckets = Math.max(0, parseInt(body.buckets, 10) || 0);
+        if (body.available != null) s.available = !!body.available;
+        if (body.payments != null) s.payments = normalizePayments(body.payments);
+
+        if (body.whatsapp != null) {
+          const wa = normalizeWhatsApp(body.whatsapp);
+          if (!isValidWhatsApp(wa)) {
+            return jsonError("WhatsApp inválido. Use 2449… ou deixe vazio.", 400);
+          }
+          s.whatsapp = wa;
+        }
+        if (body.phone != null) {
+          const ph = normalizePhone(body.phone);
+          if (!isValidPhone(ph)) {
+            return jsonError("Telefone inválido. Use 244… ou deixe vazio.", 400);
+          }
+          s.phone = ph;
+        }
+        if (body.email != null) {
+          const email = normalizeEmail(body.email);
+          if (!isValidEmail(email)) return jsonError("Email inválido.", 400);
+          if (email && email !== s.email) {
+            const existing = await env.SELLERS.get("email:" + email);
+            if (existing && existing !== s.id) {
+              return jsonError("Este email já está em uso.", 409);
+            }
+            if (s.email) await env.SELLERS.delete("email:" + s.email);
+            if (email) await env.SELLERS.put("email:" + email, s.id);
+          }
+          s.email = email || "";
+        }
+
+        const newPass = String(body.sellerPassword || body.accountPassword || "").trim();
+        if (newPass.length >= 6) {
+          const { hash, salt } = await hashPassword(newPass);
+          s.passwordHash = hash;
+          s.passwordSalt = salt;
+        }
+
+        if (body.status === "banned" || body.status === "approved") {
+          s.status = body.status;
+          if (s.status === "banned") s.available = false;
+        }
+
+        s.updatedAt = new Date().toISOString();
+        await saveSeller(env, s);
+
+        try {
+          await rebuildPublicCatalog(env);
+        } catch (e) {
+          console.error("catalog after admin update failed", e);
+        }
+
+        const { passwordHash, passwordSalt, ...safe } = s;
+        return respond({ ok: true, seller: safe });
       }
 
       if (request.method === "POST" && path.endsWith("/admin/moderate")) {

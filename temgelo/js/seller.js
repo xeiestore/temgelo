@@ -80,14 +80,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (token) {
+    // Show dashboard shell immediately (CSS also hides auth via seller-has-session)
+    document.getElementById("screen-auth")?.classList.add("hidden");
+    document.getElementById("screen-dash")?.classList.remove("hidden");
+    document.getElementById("topbar-title").textContent = "A minha conta";
     loadMe().then(() => {
-      if (location.hash === "#perfil") {
-        setTimeout(() => {
-          document.getElementById("dash-name")?.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      }
+      applySellerHash();
     });
   } else {
+    document.documentElement.classList.remove("seller-has-session");
     showAuth();
     initRegMap();
     if (location.hash === "#registar") {
@@ -95,6 +96,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
+
+function applySellerHash() {
+  const h = (location.hash || "").toLowerCase();
+  if (h === "#perfil" || h === "#profile") {
+    setTimeout(() => {
+      document.getElementById("section-profile")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  } else if (h === "#stock" || h === "#meu-stock") {
+    setTimeout(() => {
+      document.getElementById("section-stock")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
+}
 
 function setupPasswordToggles() {
   document.querySelectorAll(".password-toggle").forEach((btn) => {
@@ -183,7 +197,11 @@ function renderDrawerNav() {
       if (a === "stock" || a === "profile") {
         showDash();
         if (a === "profile") {
-          document.querySelector("#dash-name")?.scrollIntoView({ behavior: "smooth" });
+          history.replaceState(null, "", "#perfil");
+          document.getElementById("section-profile")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          history.replaceState(null, "", "#stock");
+          document.getElementById("section-stock")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }
     });
@@ -229,6 +247,7 @@ function switchTab(tab) {
 }
 
 function showAuth() {
+  document.documentElement.classList.remove("seller-has-session");
   document.getElementById("screen-auth")?.classList.remove("hidden");
   document.getElementById("screen-dash")?.classList.add("hidden");
   document.getElementById("topbar-title").textContent = "Vendedor";
@@ -250,6 +269,7 @@ async function applyBrandImage() {
 }
 
 function showDash() {
+  document.documentElement.classList.add("seller-has-session");
   document.getElementById("screen-auth")?.classList.add("hidden");
   document.getElementById("screen-dash")?.classList.remove("hidden");
   document.getElementById("topbar-title").textContent = me?.name || "A minha conta";

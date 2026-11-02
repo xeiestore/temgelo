@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyTexts();
   if (typeof window !== "undefined") window.TEMGELO_TEXTS = texts;
   initMap();
+  setupBottomSlot();
   loadCatalog();
   setInterval(loadCatalog, POLL_MS);
   document.addEventListener("visibilitychange", () => {
@@ -27,11 +28,62 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+const SAFETY_AUTO_HIDE_MS = 10000;
+let safetyHideTimer = null;
+
+function hideSafetyShowAds() {
+  const safety = document.getElementById("safety-banner");
+  const ads = document.getElementById("ad-banner");
+  if (!safety) return;
+  safety.classList.add("is-hiding");
+  setTimeout(() => {
+    safety.classList.add("hidden");
+    safety.classList.remove("is-hiding");
+    if (ads) ads.classList.remove("hidden");
+  }, 350);
+}
+
+function showSafetyTemporarily() {
+  const safety = document.getElementById("safety-banner");
+  const ads = document.getElementById("ad-banner");
+  if (!safety) return;
+  if (safetyHideTimer) {
+    clearTimeout(safetyHideTimer);
+    safetyHideTimer = null;
+  }
+  if (ads) ads.classList.add("hidden");
+  safety.classList.remove("hidden", "is-hiding");
+  safetyHideTimer = setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
+}
+
+function setupBottomSlot() {
+  document.getElementById("safety-close-btn")?.addEventListener("click", () => {
+    if (safetyHideTimer) {
+      clearTimeout(safetyHideTimer);
+      safetyHideTimer = null;
+    }
+    hideSafetyShowAds();
+  });
+  // Auto-dismiss safety after 10s → partner ad strip
+  safetyHideTimer = setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
+  window.showSafetyBanner = showSafetyTemporarily;
+}
+
 function initMap() {
+  // Approximate Angola bounds (small padding so edges aren't clipped awkwardly)
+  const angolaBounds = L.latLngBounds(
+    L.latLng(-18.5, 11.0), // SW
+    L.latLng(-4.0, 24.5) // NE
+  );
+
   map = L.map("map", {
     zoomControl: false,
-    attributionControl: true
-  }).setView([-11.2, 17.5], 6);
+    attributionControl: true,
+    maxBounds: angolaBounds,
+    maxBoundsViscosity: 1.0, // hard stop at edges
+    minZoom: 5,
+    maxZoom: 19
+  }).fitBounds(angolaBounds, { padding: [12, 12] });
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
@@ -124,6 +176,43 @@ function applyTexts() {
   const safetyBody = document.getElementById("safety-body");
   if (safetyTitle) safetyTitle.textContent = texts.safetyTitle || DEFAULT_TEXTS.safetyTitle;
   if (safetyBody) safetyBody.textContent = texts.safetyBody || DEFAULT_TEXTS.safetyBody;
+
+  // Partner self-promo ad (persuade Angolan businesses to buy this strip)
+  const adTitle = document.getElementById("ad-banner-title");
+  const adText = document.getElementById("ad-banner-text");
+  const adCta = document.getElementById("ad-banner-cta");
+  if (adTitle) {
+    adTitle.textContent = texts.adTitle || "Negócio angolano?";
+  }
+  if (adText) {
+    adText.textContent =
+      " " +
+      (texts.adBody ||
+        "Coloque a sua marca aqui — lojas, serviços, entregas. Quem procura gelo em Angola já está a ver este espaço.");
+  }
+  if (adCta) {
+    adCta.textContent = texts.adCta || "Quero anunciar";
+    const wa = String(texts.adminWhatsApp || DEFAULT_TEXTS.adminWhatsApp || "")
+      .replace(/\D/g, "");
+    const msg = encodeURIComponent(
+      texts.adWaMessage ||
+        "Olá! Vi o espaço de anúncios no Tem Gelo? e quero anunciar o meu negócio/serviço."
+    );
+    if (wa && wa.length >= 11) {
+      adCta.href = "https://wa.me/" + wa + "?text=" + msg;
+      adCta.target = "_blank";
+      adCta.rel = "noopener";
+    } else {
+      adCta.href = "#";
+      adCta.removeAttribute("target");
+      adCta.onclick = (e) => {
+        e.preventDefault();
+        alert(
+          "Para anunciar neste espaço, contacte a equipa Tem Gelo? pelo WhatsApp indicado em Segurança / Admin."
+        );
+      };
+    }
+  }
 }
 
 function applyImages() {
