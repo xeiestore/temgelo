@@ -218,9 +218,23 @@ html.seller-has-session #screen-dash {
 }
 html.seller-view-stock #section-profile {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
 }
 html.seller-view-profile #section-stock {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
 }
 
 /* Raise Leaflet +/- above bottom ad/safety strip */

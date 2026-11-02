@@ -80,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   window.addEventListener("hashchange", () => applySellerHash());
+  window.addEventListener("popstate", () => applySellerHash());
 
   if (token) {
     // Show dashboard shell immediately (CSS also hides auth via seller-has-session)
@@ -89,6 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
     applySellerHash();
     loadMe().then(() => {
       applySellerHash();
+      // Re-apply after layout/fill in case anything reset visibility
+      setTimeout(applySellerHash, 0);
+      setTimeout(applySellerHash, 100);
     });
   } else {
     document.documentElement.classList.remove("seller-has-session");
@@ -102,39 +106,81 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /** Exclusive views: stock page vs profile page (not one long scroll). */
 function applySellerHash() {
-  const h = (location.hash || "").toLowerCase();
+  const rawHash = (location.hash || "").toLowerCase().replace(/^#/, "").split("?")[0];
   const path = (location.pathname || "").toLowerCase();
+  const params = new URLSearchParams(location.search || "");
+  let stored = "";
+  try {
+    stored = sessionStorage.getItem("temgelo_seller_view") || "";
+  } catch (_) {}
+
   const root = document.documentElement;
   root.classList.remove("seller-view-stock", "seller-view-profile");
 
   let view = "all";
-  if (h === "#stock" || h === "#meu-stock" || /stock\.html$/.test(path)) view = "stock";
-  else if (h === "#perfil" || h === "#profile" || /profile\.html$/.test(path)) view = "profile";
+  if (
+    rawHash === "stock" ||
+    rawHash === "meu-stock" ||
+    params.get("view") === "stock" ||
+    stored === "stock" ||
+    /\/stock(\.html)?$/.test(path)
+  ) {
+    view = "stock";
+  } else if (
+    rawHash === "perfil" ||
+    rawHash === "profile" ||
+    params.get("view") === "profile" ||
+    params.get("view") === "perfil" ||
+    stored === "profile" ||
+    /\/profile(\.html)?$/.test(path)
+  ) {
+    view = "profile";
+  }
+
+  const stock = document.getElementById("section-stock");
+  const profile = document.getElementById("section-profile");
+  const title = document.getElementById("topbar-title");
+
+  function showEl(el, on) {
+    if (!el) return;
+    if (on) {
+      el.classList.remove("hidden");
+      el.hidden = false;
+      el.style.display = "";
+      el.style.visibility = "";
+    } else {
+      el.classList.add("hidden");
+      el.hidden = true;
+      el.style.display = "none";
+      el.style.visibility = "hidden";
+    }
+  }
 
   if (view === "stock") {
     root.classList.add("seller-view-stock");
-    document.getElementById("section-stock")?.classList.remove("hidden");
-    document.getElementById("section-profile")?.classList.add("hidden");
-    if (document.getElementById("topbar-title") && me) {
-      document.getElementById("topbar-title").textContent = "Meu stock";
-    } else if (document.getElementById("topbar-title")) {
-      document.getElementById("topbar-title").textContent = "Meu stock";
-    }
+    try {
+      sessionStorage.setItem("temgelo_seller_view", "stock");
+    } catch (_) {}
+    showEl(stock, true);
+    showEl(profile, false);
+    if (title) title.textContent = "Meu stock";
     window.scrollTo(0, 0);
   } else if (view === "profile") {
     root.classList.add("seller-view-profile");
-    document.getElementById("section-profile")?.classList.remove("hidden");
-    document.getElementById("section-stock")?.classList.add("hidden");
-    if (document.getElementById("topbar-title")) {
-      document.getElementById("topbar-title").textContent = "Perfil";
-    }
+    try {
+      sessionStorage.setItem("temgelo_seller_view", "profile");
+    } catch (_) {}
+    showEl(profile, true);
+    showEl(stock, false);
+    if (title) title.textContent = "Perfil";
     window.scrollTo(0, 0);
   } else {
-    document.getElementById("section-stock")?.classList.remove("hidden");
-    document.getElementById("section-profile")?.classList.remove("hidden");
-    if (document.getElementById("topbar-title")) {
-      document.getElementById("topbar-title").textContent = me?.name || "A minha conta";
-    }
+    try {
+      sessionStorage.removeItem("temgelo_seller_view");
+    } catch (_) {}
+    showEl(stock, true);
+    showEl(profile, true);
+    if (title) title.textContent = me?.name || "A minha conta";
   }
 }
 

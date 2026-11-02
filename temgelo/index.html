@@ -76,6 +76,63 @@
       <a class="ad-banner-cta" id="ad-banner-cta" href="#" target="_blank" rel="noopener">Quero anunciar</a>
     </div>
   </div>
+  <!-- Inline safety timer: works even if a stale cached app.js has no auto-hide -->
+  <script>
+    (function () {
+      var SAFETY_MS = 10000;
+      var timer = null;
+      function hideSafety() {
+        var safety = document.getElementById("safety-banner");
+        var ads = document.getElementById("ad-banner");
+        if (!safety || safety.getAttribute("data-dismissed") === "1") return;
+        safety.setAttribute("data-dismissed", "1");
+        safety.classList.add("is-hiding");
+        window.setTimeout(function () {
+          safety.classList.add("hidden");
+          safety.style.display = "none";
+          safety.classList.remove("is-hiding");
+          if (ads) {
+            ads.classList.remove("hidden");
+            ads.style.display = "flex";
+          }
+        }, 300);
+      }
+      function arm() {
+        if (timer) clearTimeout(timer);
+        timer = window.setTimeout(hideSafety, SAFETY_MS);
+      }
+      function onReady() {
+        var btn = document.getElementById("safety-close-btn");
+        if (btn) {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            if (timer) clearTimeout(timer);
+            hideSafety();
+          });
+        }
+        arm();
+        // Expose so menu "Segurança" can show again
+        window.__temGeloShowSafety = function () {
+          var safety = document.getElementById("safety-banner");
+          var ads = document.getElementById("ad-banner");
+          if (!safety) return;
+          safety.removeAttribute("data-dismissed");
+          safety.classList.remove("hidden", "is-hiding");
+          safety.style.display = "";
+          if (ads) {
+            ads.classList.add("hidden");
+            ads.style.display = "";
+          }
+          arm();
+        };
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", onReady);
+      } else {
+        onReady();
+      }
+    })();
+  </script>
 
   <!-- Report modal (sends to admin panel, not WhatsApp) -->
   <div id="report-modal" class="report-modal hidden" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
@@ -200,8 +257,8 @@
         if (loggedIn) {
           nav.innerHTML =
             userLine +
-            '<a href="stock.html" class="drawer-link">' + iconStock + ' ' + menuText("menuStock", "Meu stock") + '</a>' +
-            '<a href="profile.html" class="drawer-link">' + iconUser + ' ' + menuText("menuProfile", "Perfil") + '</a>' +
+            '<a href="seller.html?view=stock#stock" class="drawer-link">' + iconStock + ' ' + menuText("menuStock", "Meu stock") + '</a>' +
+            '<a href="seller.html?view=profile#perfil" class="drawer-link">' + iconUser + ' ' + menuText("menuProfile", "Perfil") + '</a>' +
             '<a href="#" class="drawer-link drawer-link-danger" id="public-seller-logout">' + iconLogout + ' ' + menuText("menuLogout", "Sair") + '</a>' +
             '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' ' + menuText("menuSafety", "Segurança") + '</a>' +
             installLink +
@@ -219,7 +276,14 @@
           e.preventDefault();
           close();
           if (typeof window.showSafetyBanner === "function") window.showSafetyBanner();
-          else document.getElementById("safety-banner")?.classList.remove("hidden");
+          else if (typeof window.__temGeloShowSafety === "function") window.__temGeloShowSafety();
+          else {
+            const el = document.getElementById("safety-banner");
+            if (el) {
+              el.classList.remove("hidden");
+              el.style.display = "";
+            }
+          }
         });
         document.getElementById("link-report")?.addEventListener("click", (e) => {
           e.preventDefault();

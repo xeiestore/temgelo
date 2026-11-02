@@ -1,9 +1,12 @@
 // Tem Gelo? – Service Worker (basic offline shell)
-const CACHE_NAME = "temgelo-v13";
+// Bump CACHE_NAME on every important static change so clients drop stale JS/CSS.
+const CACHE_NAME = "temgelo-v15";
 const ASSETS = [
   "./",
   "./index.html",
   "./seller.html",
+  "./stock.html",
+  "./profile.html",
   "./admin.html",
   "./css/styles.css",
   "./js/sellers.js",
@@ -36,6 +39,20 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function networkFirst(request, cacheKey) {
+  return fetch(request)
+    .then((res) => {
+      if (res && res.ok) {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(cacheKey || request, clone);
+        });
+      }
+      return res;
+    })
+    .catch(() => caches.match(cacheKey || request));
+}
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
@@ -44,7 +61,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.origin !== self.location.origin) {
-    // Catalog / Worker API: never cache – always network (admin publish must show ASAP)
+    // Catalog / Worker API: never cache
     if (
       url.hostname.includes("workers.dev") ||
       url.pathname.includes("/catalog") ||
@@ -57,14 +74,12 @@ self.addEventListener("fetch", (event) => {
       return;
     }
     if (url.hostname.includes("unpkg.com")) {
-      event.respondWith(
-        caches.match(event.request).then((cached) => cached || fetch(event.request))
-      );
+      event.respondWith(networkFirst(event.request));
     }
     return;
   }
 
-  // HTML / navigations: always prefer network so hamburger & UI updates show up
+  // HTML / navigations: network-first
   const isHTML =
     event.request.mode === "navigate" ||
     url.pathname.endsWith(".html") ||
@@ -79,7 +94,6 @@ self.addEventListener("fetch", (event) => {
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, clone);
-              // Also store under index.html key for logo / start_url
               if (url.pathname === "/" || url.pathname.endsWith("/")) {
                 cache.put("./index.html", res.clone());
               }
@@ -96,6 +110,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // JS / CSS: network-first so UI fixes (safety timer, ads, menus) ship immediately
+  if (
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.includes("/js/") ||
+    url.pathname.includes("/css/")
+  ) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  // Other same-origin: cache-first
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (

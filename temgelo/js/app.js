@@ -36,19 +36,25 @@ let safetyHideTimer = null;
 function hideSafetyShowAds() {
   const safety = document.getElementById("safety-banner");
   const ads = document.getElementById("ad-banner");
-  if (!safety) return;
+  if (!safety || safety.getAttribute("data-dismissed") === "1") return;
+  safety.setAttribute("data-dismissed", "1");
   safety.classList.add("is-hiding");
   window.setTimeout(() => {
     safety.classList.add("hidden");
+    safety.style.display = "none";
     safety.classList.remove("is-hiding");
     if (ads) {
       ads.classList.remove("hidden");
       ads.style.display = "flex";
     }
-  }, 320);
+  }, 300);
 }
 
 function showSafetyTemporarily() {
+  if (typeof window.__temGeloShowSafety === "function") {
+    window.__temGeloShowSafety();
+    return;
+  }
   const safety = document.getElementById("safety-banner");
   const ads = document.getElementById("ad-banner");
   if (!safety) return;
@@ -60,11 +66,15 @@ function showSafetyTemporarily() {
     ads.classList.add("hidden");
     ads.style.display = "";
   }
+  safety.removeAttribute("data-dismissed");
   safety.classList.remove("hidden", "is-hiding");
+  safety.style.display = "";
   safetyHideTimer = window.setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
 }
 
 function setupBottomSlot() {
+  // Primary auto-hide is the inline script in index.html (survives stale SW app.js).
+  // This is a backup + menu helper.
   document.getElementById("safety-close-btn")?.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -74,16 +84,8 @@ function setupBottomSlot() {
     }
     hideSafetyShowAds();
   });
-  // Auto-dismiss safety after 10s → partner ad strip
   if (safetyHideTimer) clearTimeout(safetyHideTimer);
   safetyHideTimer = window.setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
-  window.addEventListener("load", () => {
-    const safety = document.getElementById("safety-banner");
-    if (safety && !safety.classList.contains("hidden")) {
-      if (safetyHideTimer) clearTimeout(safetyHideTimer);
-      safetyHideTimer = window.setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
-    }
-  });
   window.showSafetyBanner = showSafetyTemporarily;
 }
 

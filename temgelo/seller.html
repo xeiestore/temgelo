@@ -18,12 +18,16 @@
       try {
         var t = localStorage.getItem("temgelo_seller_token") || sessionStorage.getItem("temgelo_seller_token");
         if (t) document.documentElement.classList.add("seller-has-session");
-        var h = (location.hash || "").toLowerCase();
+        var h = (location.hash || "").toLowerCase().replace(/^#/, "");
         var path = (location.pathname || "").toLowerCase();
-        if (h === "#stock" || h === "#meu-stock" || /stock\.html$/.test(path)) {
+        var q = "";
+        try { q = new URLSearchParams(location.search).get("view") || sessionStorage.getItem("temgelo_seller_view") || ""; } catch (e) {}
+        if (h === "stock" || h === "meu-stock" || q === "stock" || /stock\.html$/.test(path)) {
           document.documentElement.classList.add("seller-view-stock");
-        } else if (h === "#perfil" || h === "#profile" || /profile\.html$/.test(path)) {
+          try { sessionStorage.setItem("temgelo_seller_view", "stock"); } catch (e) {}
+        } else if (h === "perfil" || h === "profile" || q === "profile" || q === "perfil" || /profile\.html$/.test(path)) {
           document.documentElement.classList.add("seller-view-profile");
+          try { sessionStorage.setItem("temgelo_seller_view", "profile"); } catch (e) {}
         }
       } catch (_) {}
     })();

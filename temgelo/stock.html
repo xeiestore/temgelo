@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta http-equiv="refresh" content="0;url=seller.html#stock" />
   <title>Meu stock – Tem Gelo?</title>
   <script>
     (function () {
       try {
+        sessionStorage.setItem("temgelo_seller_view", "stock");
         var t = localStorage.getItem("temgelo_seller_token") || sessionStorage.getItem("temgelo_seller_token");
         if (t) document.documentElement.classList.add("seller-has-session");
         document.documentElement.classList.add("seller-view-stock");
       } catch (_) {}
-      location.replace("seller.html#stock");
+      location.replace("seller.html?view=stock#stock");
     })();
   </script>
 </head>
 <body style="background:#0f172a;color:#94a3b8;font-family:system-ui;padding:24px">
   A abrir Meu stock…
-  <p><a href="seller.html#stock" style="color:#93c5fd">Continuar</a></p>
+  <p><a href="seller.html?view=stock#stock" style="color:#93c5fd">Continuar</a></p>
 </body>
 </html>
