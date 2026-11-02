@@ -165,11 +165,7 @@ async function loadCatalog() {
   applyImages();
   renderMarkers();
   updateCount();
-  // Only fit bounds on first successful load with sellers
-  if (!loadCatalog._fitted && catalogLoadedOnce && sellers.length) {
-    fitToSellers();
-    loadCatalog._fitted = true;
-  }
+  // Keep full Angola on load — do not auto-zoom to sellers (user can explore the country)
 }
 
 function fitToSellers() {

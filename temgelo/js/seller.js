@@ -71,11 +71,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-login")?.addEventListener("click", doLogin);
   document.getElementById("btn-register")?.addEventListener("click", doRegister);
   document.getElementById("btn-save-stock")?.addEventListener("click", () => saveMe("stock"));
+  document.getElementById("btn-stock-soldout")?.addEventListener("click", markSoldOut);
   document.getElementById("dash-unit")?.addEventListener("change", updateDashQtyLabel);
   document.getElementById("reg-unit")?.addEventListener("change", updateRegQtyLabel);
+  document.getElementById("dash-available")?.addEventListener("change", updateStockHints);
+  document.getElementById("dash-buckets")?.addEventListener("input", updateStockHints);
   updateRegQtyLabel();
   updateDashQtyLabel();
-  renderPackageRows("dash-packages", me.packages || []);
   document.getElementById("btn-add-package")?.addEventListener("click", () => addPackageRow("dash-packages"));
   document.getElementById("btn-reg-add-package")?.addEventListener("click", () => addPackageRow("reg-packages"));
   renderPackageRows("dash-packages", []);
@@ -88,8 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("temgelo_seller_view", "profile");
     } catch (_) {}
     history.replaceState(null, "", "seller.html?view=profile#perfil");
-    showDash();
     applySellerHash();
+    if (me) fillDash();
+    else loadMe();
   });
   document.getElementById("link-to-stock")?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -97,8 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("temgelo_seller_view", "stock");
     } catch (_) {}
     history.replaceState(null, "", "seller.html?view=stock#stock");
-    showDash();
     applySellerHash();
+    if (me) fillDash();
+    else loadMe();
   });
   document.getElementById("btn-reg-gps")?.addEventListener("click", () => useGps("reg"));
   document.getElementById("btn-dash-gps")?.addEventListener("click", () => useGps("dash"));
@@ -107,8 +111,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") doLogin();
   });
 
-  window.addEventListener("hashchange", () => applySellerHash());
-  window.addEventListener("popstate", () => applySellerHash());
+  window.addEventListener("hashchange", () => {
+    applySellerHash();
+    if (me) fillDash();
+  });
+  window.addEventListener("popstate", () => {
+    applySellerHash();
+    if (me) fillDash();
+  });
 
   if (token) {
     // Show dashboard shell immediately (CSS also hides auth via seller-has-session)
@@ -117,10 +127,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("screen-dash")?.classList.remove("hidden");
     applySellerHash();
     loadMe().then(() => {
+      fillDash();
       applySellerHash();
-      // Re-apply after layout/fill in case anything reset visibility
-      setTimeout(applySellerHash, 0);
-      setTimeout(applySellerHash, 100);
+      setTimeout(() => {
+        fillDash();
+        applySellerHash();
+      }, 0);
+      setTimeout(() => {
+        fillDash();
+        applySellerHash();
+        setTimeout(initDashMap, 50);
+      }, 100);
     });
   } else {
     document.documentElement.classList.remove("seller-has-session");
@@ -202,6 +219,9 @@ function applySellerHash() {
     showEl(stock, false);
     if (title) title.textContent = "Perfil";
     window.scrollTo(0, 0);
+    // Ensure fields are filled and map sized when profile becomes visible
+    if (me) fillDash();
+    setTimeout(initDashMap, 80);
   } else {
     try {
       sessionStorage.removeItem("temgelo_seller_view");
@@ -301,7 +321,6 @@ function renderDrawerNav() {
         switchTab("register");
       }
       if (a === "stock" || a === "profile") {
-        showDash();
         if (a === "profile") {
           try {
             sessionStorage.setItem("temgelo_seller_view", "profile");
@@ -313,7 +332,9 @@ function renderDrawerNav() {
           } catch (_) {}
           history.replaceState(null, "", "seller.html?view=stock#stock");
         }
+        showDash();
         applySellerHash();
+        if (me) fillDash();
       }
     });
   });
@@ -416,6 +437,11 @@ async function doLogin() {
     alert("Preencha utilizador/email e palavra-passe.");
     return;
   }
+  const btn = document.getElementById("btn-login");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "A entrar…";
+  }
   try {
     const data = await api("/auth/login", {
       method: "POST",
@@ -426,9 +452,17 @@ async function doLogin() {
     writeToken(token, stay);
     me = data.seller;
     saveSellerProfile(me, stay);
-    showDash();
+    try {
+      sessionStorage.removeItem("temgelo_seller_view");
+    } catch (_) {}
+    // After login always land on the public map (hamburger → Meu stock / Perfil)
+    window.location.replace("./index.html");
   } catch (err) {
     alert(err.message || "Erro ao entrar");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Entrar";
+    }
   }
 }
 
@@ -537,8 +571,12 @@ async function deleteMyAccount() {
     btn.textContent = "A eliminar…";
   }
   try {
-    // POST is supported on all Worker versions with standard CORS (GET/POST/PATCH)
-    await api("/seller/delete", { method: "POST", body: "{}" });
+    // Prefer POST /seller/delete; fall back to DELETE /seller/me
+    try {
+      await api("/seller/delete", { method: "POST", body: "{}" });
+    } catch (e1) {
+      await api("/seller/me", { method: "DELETE", body: "{}" });
+    }
     token = null;
     me = null;
     clearToken();
@@ -547,7 +585,7 @@ async function deleteMyAccount() {
       localStorage.removeItem("temgelo_seller_profile");
     } catch (_) {}
     alert("Conta eliminada. Já não aparece no mapa.");
-    window.location.replace("index.html");
+    window.location.replace("./index.html");
   } catch (err) {
     alert(err.message || "Não foi possível eliminar a conta.");
     if (btn) {
@@ -582,47 +620,84 @@ async function loadMe() {
   }
 }
 
+function setInputValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.type === "checkbox") {
+    el.checked = !!value;
+  } else {
+    el.value = value == null ? "" : String(value);
+  }
+}
+
 function fillDash() {
   if (!me) return;
-  document.getElementById("dash-buckets").value = me.buckets ?? 0;
+
+  // Stock
+  setInputValue("dash-buckets", me.buckets ?? 0);
   const unitEl = document.getElementById("dash-unit");
   if (unitEl) unitEl.value = me.unit === "kg" ? "kg" : "baldes";
-  document.getElementById("dash-freeze").value = me.freeze || "muito_congelado";
+  setInputValue("dash-freeze", me.freeze || "muito_congelado");
   updateDashQtyLabel();
   renderPackageRows("dash-packages", me.packages || []);
-  document.getElementById("dash-price").value = me.price || "";
-  document.getElementById("dash-available").checked = !!me.available;
-  document.getElementById("dash-name").value = me.name || "";
-  document.getElementById("dash-email").value = me.email || "";
-  document.getElementById("dash-whatsapp").value = me.whatsapp || "";
-  const dashPhone = document.getElementById("dash-phone");
-  if (dashPhone) dashPhone.value = me.phone || "";
+  setInputValue("dash-price", me.price || "");
+  setInputValue("dash-available", !!me.available);
+
+  // Profile — always refill so switching views never shows empty fields
+  setInputValue("dash-name", me.name || "");
+  setInputValue("dash-email", me.email || "");
+  setInputValue("dash-whatsapp", me.whatsapp || "");
+  setInputValue("dash-phone", me.phone || "");
   const pay = me.payments || {};
-  const setChk = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.checked = !!val;
-  };
-  setChk("dash-pay-numerario", pay.numerario);
-  setChk("dash-pay-multicaixa", pay.multicaixa);
-  setChk("dash-pay-unitel", pay.unitel);
-  const other = document.getElementById("dash-pay-other");
-  if (other) other.value = pay.other || "";
-  document.getElementById("dash-neighborhood").value = me.neighborhood || "";
-  document.getElementById("dash-notes").value = me.notes || "";
-  document.getElementById("dash-lat").value = me.lat ?? "";
-  document.getElementById("dash-lng").value = me.lng ?? "";
+  setInputValue("dash-pay-numerario", pay.numerario);
+  setInputValue("dash-pay-multicaixa", pay.multicaixa);
+  setInputValue("dash-pay-unitel", pay.unitel);
+  setInputValue("dash-pay-other", pay.other || "");
+  setInputValue("dash-neighborhood", me.neighborhood || "");
+  setInputValue("dash-notes", me.notes || "");
+  setInputValue("dash-lat", me.lat ?? "");
+  setInputValue("dash-lng", me.lng ?? "");
 
   const banner = document.getElementById("status-banner");
-  if (!banner) return;
-  banner.className = "status-banner";
-  if (me.status === "banned") {
-    banner.classList.add("banned");
-    banner.textContent = "Conta bloqueada. Contacte o administrador.";
-  } else {
-    banner.classList.add("approved");
-    banner.textContent =
-      "Conta activa – visível no mapa quando marcar gelo disponível e quantidade > 0.";
+  if (banner) {
+    banner.className = "status-banner";
+    if (me.status === "banned") {
+      banner.classList.add("banned");
+      banner.textContent = "Conta bloqueada. Contacte o administrador.";
+    } else {
+      const qty = Number(me.buckets) || 0;
+      const pkgs = Array.isArray(me.packages) ? me.packages.length : 0;
+      const onMap = !!me.available && (qty > 0 || pkgs > 0);
+      banner.classList.add("approved");
+      banner.textContent = onMap
+        ? "Conta activa – visível no mapa agora (gelo disponível)."
+        : "Conta activa – marque «Tenho gelo disponível» e quantidade > 0 para aparecer no mapa.";
+    }
   }
+
+  updateStockHints();
+}
+
+function updateStockHints() {
+  const hint = document.getElementById("stock-map-hint");
+  if (!hint || !me) return;
+  const qty = Number(document.getElementById("dash-buckets")?.value) || 0;
+  const available = !!document.getElementById("dash-available")?.checked;
+  const pkgs = collectPackages("dash-packages");
+  const onMap = available && (qty > 0 || pkgs.length > 0);
+  hint.textContent = onMap
+    ? "Com estes valores fica visível no mapa (verde)."
+    : "Ainda não aparece no mapa — active «Tenho gelo disponível» e ponha quantidade > 0 (ou tamanhos na tabela).";
+  hint.className = "text-sm mt-1 " + (onMap ? "stock-hint-ok" : "text-muted");
+}
+
+async function markSoldOut() {
+  if (!me) return;
+  const ok = confirm("Marcar como esgotado?\n\nSome do mapa até voltar a activar stock.");
+  if (!ok) return;
+  document.getElementById("dash-available").checked = false;
+  document.getElementById("dash-buckets").value = "0";
+  await saveMe("stock");
 }
 
 
@@ -742,6 +817,20 @@ async function saveMe(mode) {
     body.notes = document.getElementById("dash-notes").value.trim();
     body.lat = parseFloat(document.getElementById("dash-lat").value);
     body.lng = parseFloat(document.getElementById("dash-lng").value);
+    if (!body.name) {
+      alert("O nome é obrigatório.");
+      document.getElementById("dash-name")?.focus();
+      return;
+    }
+    if (isNaN(body.lat) || isNaN(body.lng)) {
+      alert("Defina a localização no mapa ou com GPS.");
+      return;
+    }
+  }
+  const saveBtn = document.getElementById(mode === "stock" ? "btn-save-stock" : "btn-save-profile");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "A guardar…";
   }
   try {
     const data = await api("/seller/me", {
@@ -751,9 +840,25 @@ async function saveMe(mode) {
     me = data.seller;
     saveSellerProfile(me, !!localStorage.getItem(TOKEN_KEY));
     fillDash();
-    alert("Guardado com sucesso.");
+    if (mode === "stock") {
+      const qty = Number(me.buckets) || 0;
+      const pkgs = Array.isArray(me.packages) ? me.packages.length : 0;
+      const onMap = !!me.available && (qty > 0 || pkgs > 0);
+      alert(
+        onMap
+          ? "Stock guardado. Já pode aparecer no mapa (actualiza em até ~30 s)."
+          : "Stock guardado. Ainda não aparece no mapa — active «Tenho gelo disponível» e quantidade > 0."
+      );
+    } else {
+      alert("Perfil guardado com sucesso.");
+    }
   } catch (err) {
     alert(err.message || "Erro ao guardar");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = mode === "stock" ? "Guardar stock" : "Guardar perfil";
+    }
   }
 }
 

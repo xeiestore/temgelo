@@ -22,12 +22,13 @@ Full architecture, API, auth, and deploy steps: **[BLUEPRINT.md](./BLUEPRINT.md)
 
 ## How it works (current)
 
-1. **Anyone** can open the public map and see sellers with stock (green = available + qty > 0 in baldes or kg; no 24h auto-expiry).
+1. **Anyone** can open the public map and see sellers with stock (green = available + qty > 0 in baldes or kg; no 24h auto-expiry). Map opens on **full Angola** (does not auto-zoom to sellers).
 2. **Sellers** register or log in on `seller.html`. New accounts are **active immediately** (`status: approved`) and can appear on the map as soon as stock is set — **no admin approval step**.
-3. **Admin** manages texts, images, catalog republish, reports, and can **create / edit / block / delete** real accounts (Vendedores → Guardar writes to KV and rebuilds the map immediately).
-4. Catalog is rebuilt on register, admin create/update, stock/profile update, moderate, and admin publish → KV + Cloudinary; map polls every 30s.
-5. **Logged-in map menu:** **Meu stock** (`stock.html`) and **Perfil** (`profile.html`) are separate views (each hides the other section). Session token hides Entrar before paint.
-6. **Map chrome:** safety auto-hides after 10s → partner ad strip (CTA always visible); map starts empty until live catalog loads (no demo pins flash).
+3. **After login or register** the seller goes to the **public map**. Hamburger → Meu stock / Perfil.
+4. **Admin** manages texts, images, catalog republish, reports, and can **create / edit / block / delete** real accounts (Vendedores → Guardar writes to KV and rebuilds the map immediately).
+5. Catalog is rebuilt on register, admin create/update, stock/profile update, moderate, self-delete, and admin publish → KV + Cloudinary; map polls every 30s.
+6. **Logged-in menu:** Meu stock and Perfil are exclusive views (hamburger also on desktop). Profile fields are always prefilled. Stock has «Marcar esgotado» and a live map-visibility hint.
+7. **Map chrome:** safety auto-hides after 10s → partner ad strip (CTA always visible); map starts empty until live catalog loads (no demo pins flash).
 
 ## Deploy (short)
 

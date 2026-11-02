@@ -183,8 +183,11 @@ Never commit the real password to a public repo.
 7. Test: register **or** Admin → Adicionar → map within ~30s; ban → disappears from map
 
 ## Current status
-- Public map + left hamburger (auth-aware)
+- Public map + left hamburger (auth-aware); initial view = full Angola
+- Login + register both redirect to the public map
 - Seller accounts: register → **active immediately** (no pending)
+- Profile fields always prefilled; stock has sold-out shortcut + map-visibility hint
+- Self-delete: `POST /seller/delete` (fallback `DELETE /seller/me`)
 - Admin Vendedores: create/edit real accounts (live on map); Moderação: block / reactivate / delete
 - Live catalog via Worker KV (`GET /catalog`) + 30s poll
 - Cloudinary backup with CDN invalidate

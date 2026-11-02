@@ -225,7 +225,7 @@
 
       <div class="card seller-card" id="section-stock">
         <h3>Stock de gelo</h3>
-        <p class="text-sm text-muted mb-2">Actualize sempre que o stock mudar. Escolha baldes ou kg (gelo embalado). Verde no mapa com «Tenho gelo disponível» e quantidade > 0.</p>
+        <p class="text-sm text-muted mb-2">Actualize sempre que o stock mudar. Escolha baldes ou kg (gelo embalado). Verde no mapa com «Tenho gelo disponível» e quantidade &gt; 0.</p>
         <div class="form-row">
           <div class="form-group">
             <label>Unidade</label>
@@ -257,11 +257,15 @@
           <div id="dash-packages" class="packages-list"></div>
           <button type="button" class="btn btn-ghost btn-sm mt-1" id="btn-add-package">+ Adicionar tamanho / preço</button>
         </div>
-        <label class="checkbox-row">
+        <label class="checkbox-row checkbox-row-emphasis">
           <input type="checkbox" id="dash-available" />
           <span>Tenho gelo disponível</span>
         </label>
-        <button class="btn btn-green btn-block mt-2" type="button" id="btn-save-stock">Guardar stock</button>
+        <p id="stock-map-hint" class="text-sm text-muted mt-1">Ainda não aparece no mapa — active «Tenho gelo disponível» e ponha quantidade &gt; 0.</p>
+        <div class="stock-actions mt-2">
+          <button class="btn btn-green btn-block" type="button" id="btn-save-stock">Guardar stock</button>
+          <button class="btn btn-ghost btn-block mt-1" type="button" id="btn-stock-soldout">Marcar esgotado</button>
+        </div>
         <p class="text-sm text-center mt-2">
           <a href="seller.html?view=profile#perfil" class="seller-view-switch" id="link-to-profile">Ir para Perfil →</a>
           <span class="text-muted"> · </span>
