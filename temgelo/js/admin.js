@@ -1,10 +1,11 @@
 // Tem Gelo? – Admin logic
 
 const ADMIN_PASSWORD = "EuRico2027"; // Must match the Worker secret ADMIN_PASSWORD
-const CATALOG_URL = "https://tem-gelo-publish.xeieloja.workers.dev/catalog";
+const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
+const CATALOG_URL = API_BASE + "/catalog";
 const CATALOG_FALLBACK =
   "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
-const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish";
+const PUBLISH_URL = API_BASE + "/publish";
 
 let sellers = [];
 let texts = { ...DEFAULT_TEXTS };
@@ -154,12 +155,36 @@ function readTextsForm() {
   return next;
 }
 
-function saveTexts() {
+async function saveTexts() {
   texts = readTextsForm();
   localStorage.setItem("temgelo_texts", JSON.stringify(texts));
-  document.getElementById("catalog-status").textContent =
-    "Textos guardados localmente – ainda não publicados";
-  alert("Textos guardados. Clique em Publicar para o mapa público.");
+  // Persist to KV immediately so texts survive Worker/Pages redeploys
+  try {
+    const res = await fetch(API_BASE + "/admin/republish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: ADMIN_PASSWORD,
+        texts
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    document.getElementById("catalog-status").textContent =
+      "Textos publicados no servidor (" +
+      (data.count ?? "?") +
+      " vendedores aprovados) – " +
+      new Date().toLocaleString("pt-AO");
+    alert("Textos guardados e publicados. Permanecem após redeploy.");
+  } catch (err) {
+    document.getElementById("catalog-status").textContent =
+      "Textos só no browser – falha ao publicar no servidor";
+    alert(
+      "Guardado localmente, mas falhou no servidor:\n" +
+        (err && err.message ? err.message : String(err)) +
+        "\n\nClique em Publicar quando o Worker estiver online."
+    );
+  }
 }
 
 // ---------- Render list ----------
@@ -313,55 +338,54 @@ async function publishCatalog() {
     texts = readTextsForm();
   }
 
-  const catalog = {
-    updatedAt: new Date().toISOString(),
-    sellers: sellers,
-    texts: texts
-  };
-
   // Always keep a local copy
   localStorage.setItem("temgelo_sellers", JSON.stringify(sellers));
   localStorage.setItem("temgelo_texts", JSON.stringify(texts));
 
-  if (!PUBLISH_URL) {
-    // Fallback: download JSON so you can upload manually to Cloudinary
-    const blob = new Blob([JSON.stringify(catalog, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "catalog.json";
-    a.click();
-    URL.revokeObjectURL(url);
-
-    alert(
-      "Worker ainda não configurado.\n\n" +
-      "O ficheiro catalog.json foi descarregado.\n" +
-      "Faça upload manual para Cloudinary:\n" +
-      "Folder: gelo\n" +
-      "Public ID: catalog\n" +
-      "Resource type: raw\n\n" +
-      "Depois o mapa público vai ler esse ficheiro."
-    );
-    return;
-  }
-
-  // Real publish via Worker
+  // Preferred path: persist texts in KV + rebuild catalog from approved accounts.
+  // This is what survives Worker / Pages redeploys. Legacy /publish is only
+  // used as fallback when the accounts index is still empty.
   try {
-    const res = await fetch(PUBLISH_URL, {
+    const res = await fetch(API_BASE + "/admin/republish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         password: ADMIN_PASSWORD,
-        catalog
+        texts
       })
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       throw new Error((detail || res.statusText || "HTTP " + res.status).slice(0, 200));
     }
+    const data = await res.json();
+    const count = data.count ?? 0;
+
+    if (count === 0 && Array.isArray(sellers) && sellers.length > 0) {
+      // No approved accounts yet – seed public catalog from admin draft once
+      const catalog = {
+        updatedAt: new Date().toISOString(),
+        sellers,
+        texts
+      };
+      const seedRes = await fetch(PUBLISH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: ADMIN_PASSWORD, catalog })
+      });
+      if (!seedRes.ok) {
+        const detail = await seedRes.text().catch(() => "");
+        throw new Error((detail || seedRes.statusText || "HTTP " + seedRes.status).slice(0, 200));
+      }
+      document.getElementById("catalog-status").textContent =
+        "Publicado (rascunho inicial + textos) – " + new Date().toLocaleString("pt-AO");
+      alert("Publicado! Textos e catálogo inicial no servidor.");
+      return;
+    }
+
     document.getElementById("catalog-status").textContent =
-      "Publicado com sucesso! " + new Date().toLocaleString("pt-AO");
-    alert("Publicado! O mapa público já deve mostrar as alterações.");
+      "Publicado (" + count + " aprovados + textos) – " + new Date().toLocaleString("pt-AO");
+    alert("Publicado! Textos ficam no KV e sobrevivem a redeploys.");
   } catch (err) {
     const msg = err && err.message ? err.message : String(err);
     if (/failed to fetch|networkerror|load failed/i.test(msg)) {
@@ -388,8 +412,6 @@ function escapeHtml(str) {
 }
 
 // ---------- Accounts moderation (seller self-registration) ----------
-const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
-
 async function loadAccounts() {
   const container = document.getElementById("accounts-list");
   if (!container) return;

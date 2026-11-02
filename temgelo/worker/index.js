@@ -221,6 +221,17 @@ async function saveSeller(env, seller) {
   await env.SELLERS.put("seller:" + seller.id, JSON.stringify(seller));
 }
 
+async function loadSiteTexts(env) {
+  const textsRaw = await env.SELLERS.get("meta:texts");
+  if (!textsRaw) return {};
+  try {
+    const parsed = JSON.parse(textsRaw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
 async function rebuildPublicCatalog(env) {
   const ids = await getIndex(env);
   const sellers = [];
@@ -230,13 +241,9 @@ async function rebuildPublicCatalog(env) {
       sellers.push(publicSeller(s));
     }
   }
-  let texts = {};
-  const textsRaw = await env.SELLERS.get("meta:texts");
-  if (textsRaw) {
-    try {
-      texts = JSON.parse(textsRaw);
-    } catch (_) {}
-  }
+  // Always re-attach durable site texts from KV so redeploys / seller
+  // updates never wipe custom copy published from Admin → Textos.
+  const texts = await loadSiteTexts(env);
   const catalog = {
     updatedAt: new Date().toISOString(),
     sellers,
@@ -282,14 +289,36 @@ export default {
         const body = await request.json();
         if (body.password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
         const catalog = body.catalog;
-        if (!catalog || !Array.isArray(catalog.sellers)) {
+        if (!catalog || typeof catalog !== "object") {
           return respond("Invalid catalog", 400);
         }
+
+        // Persist site texts in KV (survives Worker / Pages redeploys)
         if (catalog.texts && typeof catalog.texts === "object") {
           await env.SELLERS.put("meta:texts", JSON.stringify(catalog.texts));
         }
-        await uploadCatalog(env, catalog);
-        return respond({ ok: true });
+
+        const ids = await getIndex(env);
+        // Prefer live approved accounts as source of truth for sellers.
+        // Only accept the payload sellers list when no accounts exist yet
+        // (legacy / first seed). This stops Admin "Publicar" from wiping
+        // real accounts with DEFAULT_SELLERS after a redeploy.
+        if (ids.length > 0) {
+          const rebuilt = await rebuildPublicCatalog(env);
+          return respond({ ok: true, count: rebuilt.sellers.length, source: "accounts" });
+        }
+
+        if (!Array.isArray(catalog.sellers)) {
+          return respond("Invalid catalog", 400);
+        }
+        const texts = await loadSiteTexts(env);
+        const finalCatalog = {
+          updatedAt: catalog.updatedAt || new Date().toISOString(),
+          sellers: catalog.sellers,
+          texts: Object.keys(texts).length ? texts : catalog.texts || {}
+        };
+        await uploadCatalog(env, finalCatalog);
+        return respond({ ok: true, count: finalCatalog.sellers.length, source: "payload" });
       }
 
       if (request.method === "POST" && path.endsWith("/auth/register")) {
@@ -551,21 +580,29 @@ export default {
       // ---- Public catalog (instant, no Cloudinary CDN lag) ----
       if (request.method === "GET" && path.endsWith("/catalog")) {
         const raw = await env.SELLERS.get("meta:public_catalog");
+        const durableTexts = await loadSiteTexts(env);
+        let catalog;
         if (!raw) {
-          // Fallback empty shell
-          return new Response(
-            JSON.stringify({ updatedAt: null, sellers: [], texts: {} }),
-            {
-              status: 200,
-              headers: {
-                ...CORS,
-                "Content-Type": "application/json",
-                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
-              }
-            }
-          );
+          catalog = { updatedAt: null, sellers: [], texts: durableTexts };
+        } else {
+          try {
+            catalog = JSON.parse(raw);
+          } catch (_) {
+            catalog = { updatedAt: null, sellers: [], texts: {} };
+          }
+          // Heal missing/empty texts after redeploy or old catalog writes
+          const hasTexts =
+            catalog.texts &&
+            typeof catalog.texts === "object" &&
+            Object.keys(catalog.texts).length > 0;
+          if (!hasTexts && Object.keys(durableTexts).length > 0) {
+            catalog.texts = durableTexts;
+          } else if (hasTexts && Object.keys(durableTexts).length > 0) {
+            // meta:texts is canonical; merge so newer admin edits win
+            catalog.texts = { ...catalog.texts, ...durableTexts };
+          }
         }
-        return new Response(raw, {
+        return new Response(JSON.stringify(catalog), {
           status: 200,
           headers: {
             ...CORS,
