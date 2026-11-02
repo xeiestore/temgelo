@@ -978,3 +978,136 @@ html, body {
   color: var(--muted);
   padding: 8px 14px 4px;
 }
+
+/* ---------- Seller auth split (desktop Entrar – Instagram-style) ---------- */
+.auth-split {
+  display: block;
+}
+.auth-brand {
+  display: none;
+}
+.auth-login-heading {
+  display: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 18px;
+  color: var(--text, #f1f5f9);
+}
+
+@media (min-width: 1024px) {
+  /* Full-bleed auth layout only on Entrar tab */
+  body.seller-body:has(#screen-auth.auth-mode-login:not(.hidden)) .seller-topbar {
+    display: none;
+  }
+  body.seller-body:has(#screen-auth.auth-mode-login:not(.hidden)) .seller-main {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 48px;
+    background: #0b1220;
+    border-right: 1px solid #1e293b;
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-brand-logo {
+    width: min(420px, 70%);
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.45));
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-brand-tagline {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.45;
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    background: var(--bg, #0f172a);
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-panel .seller-card {
+    width: 100%;
+    max-width: 400px;
+    margin: 0;
+  }
+
+  #screen-auth.auth-mode-login:not(.hidden) .auth-login-heading {
+    display: block;
+  }
+
+  /* Register tab: keep normal centered card (no left logo) */
+  #screen-auth.auth-mode-register .auth-brand {
+    display: none;
+  }
+  #screen-auth.auth-mode-register .auth-split {
+    display: block;
+  }
+  body.seller-body:has(#screen-auth.auth-mode-register:not(.hidden)) .seller-main {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px 14px calc(24px + var(--safe-bottom));
+  }
+}
+
+/* Fallback if :has() unsupported – still hide brand on small screens */
+@supports not selector(:has(*)) {
+  @media (min-width: 1024px) {
+    #screen-auth.auth-mode-login .auth-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 60px);
+    }
+    #screen-auth.auth-mode-login .auth-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 48px;
+      background: #0b1220;
+      border-right: 1px solid #1e293b;
+    }
+    #screen-auth.auth-mode-login .auth-brand-logo {
+      width: min(420px, 70%);
+      height: auto;
+    }
+    #screen-auth.auth-mode-login .auth-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 32px;
+    }
+    #screen-auth.auth-mode-login .auth-panel .seller-card {
+      width: 100%;
+      max-width: 400px;
+    }
+    #screen-auth.auth-mode-login .auth-login-heading {
+      display: block;
+    }
+  }
+}

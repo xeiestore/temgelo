@@ -165,6 +165,11 @@ function switchTab(tab) {
   document.getElementById("tab-register")?.classList.toggle("active", tab === "register");
   document.getElementById("form-login")?.classList.toggle("hidden", tab !== "login");
   document.getElementById("form-register")?.classList.toggle("hidden", tab !== "register");
+  const auth = document.getElementById("screen-auth");
+  if (auth) {
+    auth.classList.toggle("auth-mode-login", tab === "login");
+    auth.classList.toggle("auth-mode-register", tab === "register");
+  }
   if (tab === "register") setTimeout(initRegMap, 50);
 }
 
