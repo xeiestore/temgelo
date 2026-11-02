@@ -398,10 +398,17 @@
         <input type="text" id="f-neighborhood" placeholder="Lubango, Benguela, Huambo…" />
       </div>
 
+      <div class="form-group">
+        <label>Unidade de stock</label>
+        <select id="f-unit">
+          <option value="baldes">Baldes</option>
+          <option value="kg">Quilos (kg) — gelo embalado</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Baldes disponíveis</label>
-          <input type="number" id="f-buckets" min="0" value="0" />
+          <label id="f-qty-label">Quantidade</label>
+          <input type="number" id="f-buckets" min="0" step="any" value="0" />
         </div>
         <div class="form-group">
           <label>Preço (Kz)</label>

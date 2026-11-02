@@ -62,6 +62,7 @@ Changes should appear within about 0–30 seconds (or immediately on refresh).
 2. **Register:** public name, **username** (required), **email** (optional), password, map pin; WhatsApp / phone optional (map contact); payments optional.
 3. Account stored in **KV** with **`status: "approved"`** (active immediately — **no pending gate**).
 4. Worker rebuilds the public catalog on register so the seller can appear on the map right away.
+5. After register, the app logs the seller in and **redirects to the public map** (not the profile form). Stock/profile were already saved; use hamburger → Meu stock / Perfil when needed.
 5. Admin → **Vendedores** → **+ Adicionar / Guardar** creates or updates a **real** KV account (`POST` / `PATCH` `/admin/sellers`) and rebuilds the public catalog immediately (optional username/password; auto-generated if empty).
 6. Admin → **Moderação**: **Bloquear** (removes from map), **Reactivar** (after ban), **Apagar**. UI labels accounts **Activo** / **Bloqueado** only.
 7. Seller updates stock/profile; if not banned, catalog is republished automatically.
@@ -80,12 +81,12 @@ Changes should appear within about 0–30 seconds (or immediately on refresh).
 | id, username, email, passwordHash/Salt | System |
 | name, lat, lng, neighborhood, notes, whatsapp, phone | Profile (whatsapp/phone = map contact) |
 | payments | numerario, multicaixa, unitel, other |
-| price, freeze, buckets, available | Stock |
+| price, freeze, buckets, unit (`baldes`|`kg`), available | Stock |
 | status | `approved` (active) \| `banned` — new signups are always `approved` |
 | createdAt, updatedAt | Timestamps |
 
 ### 24-hour rule
-Green on map only if `available && buckets > 0 && updatedAt < 24h`.
+Green on map if `available && buckets > 0` (qty in **baldes** or **kg** via `unit`; no 24h expiry).
 
 ### Map visibility
 Anyone **not banned** can appear in the public catalog. There is no approval step before map visibility.

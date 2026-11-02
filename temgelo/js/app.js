@@ -345,7 +345,7 @@ function createPopup(seller, available) {
     ${statusHtml}
     <div class="popup-meta">${escapeHtml(seller.neighborhood || "")}</div>
     <div class="popup-row">
-      <span>${escapeHtml(texts.labelBuckets || DEFAULT_TEXTS.labelBuckets)}</span>
+      <span>${escapeHtml(stockUnitLabel(seller.unit, texts))}</span>
       <span>${seller.buckets ?? "—"}</span>
     </div>
     <div class="popup-row">

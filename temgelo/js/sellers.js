@@ -93,6 +93,10 @@ const DEFAULT_TEXTS = {
   statusOk: "Tem gelo",
   statusNo: "Sem gelo / expirado",
   labelBuckets: "Baldes",
+  labelKg: "kg",
+  labelUnit: "Unidade",
+  unitBaldes: "Baldes",
+  unitKg: "Quilos (kg)",
   labelFreeze: "Congelamento",
   labelPrice: "Preço",
   labelUpdated: "Atualizado",
@@ -125,14 +129,34 @@ const DEFAULT_TEXTS = {
   menuInstall: "Instalar app"
 };
 
-// Helper: is still "fresh" (updated in last 24 hours)
+// Optional helper (no longer gates the public map)
 function isFresh(updatedAt) {
   if (!updatedAt) return false;
   const ageMs = Date.now() - new Date(updatedAt).getTime();
-  return ageMs < 24 * 60 * 60 * 1000;
+  return ageMs >= 0 && ageMs < 24 * 60 * 60 * 1000;
 }
 
-// Effective availability (respects 24h rule)
+// Stock unit: baldes (default) or kg (packaged ice)
+function normalizeStockUnit(unit) {
+  return unit === "kg" ? "kg" : "baldes";
+}
+
+function stockUnitLabel(unit, textsObj) {
+  const t = textsObj || (typeof texts !== "undefined" ? texts : null) || DEFAULT_TEXTS;
+  return normalizeStockUnit(unit) === "kg"
+    ? t.labelKg || "kg"
+    : t.labelBuckets || "Baldes";
+}
+
+/** Human-readable quantity, e.g. "10 baldes" or "25 kg" */
+function formatStockQty(seller, textsObj) {
+  const n = Number(seller && seller.buckets) || 0;
+  const u = normalizeStockUnit(seller && seller.unit);
+  if (u === "kg") return n + " kg";
+  return n + " " + (stockUnitLabel("baldes", textsObj) || "baldes").toLowerCase();
+}
+
+// Map pin: green when available and qty > 0 (baldes or kg) — no 24h expiry
 function isEffectivelyAvailable(seller) {
-  return seller.available && isFresh(seller.updatedAt) && seller.buckets > 0;
+  return !!(seller && seller.available && Number(seller.buckets) > 0);
 }

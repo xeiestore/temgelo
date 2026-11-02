@@ -110,7 +110,7 @@
         <!-- Register -->
         <div id="form-register" class="hidden">
           <p class="text-sm text-muted mb-2">
-            Após registar, pode usar a app de imediato. Actualize o stock para aparecer no mapa público.
+            Após registar, vai para o mapa público. No menu (☰) pode abrir Meu stock ou Perfil.
           </p>
           <div class="form-group">
             <label>Nome / identificação (público no mapa)</label>
@@ -176,14 +176,21 @@
             </div>
             <button class="btn btn-ghost btn-sm" type="button" id="btn-reg-gps"><svg class="btn-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg> Usar a minha localização</button>
           </div>
+          <div class="form-group">
+            <label>Como vende o gelo?</label>
+            <select id="reg-unit">
+              <option value="baldes">Baldes</option>
+              <option value="kg">Quilos (kg) — gelo embalado / saco</option>
+            </select>
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label>Preço (Kz)</label>
               <input type="text" id="reg-price" placeholder="1500" value="1500" />
             </div>
             <div class="form-group">
-              <label>Baldes</label>
-              <input type="number" id="reg-buckets" min="0" value="0" />
+              <label id="reg-qty-label">Quantidade</label>
+              <input type="number" id="reg-buckets" min="0" step="any" value="0" />
             </div>
           </div>
           <div class="form-group">
@@ -211,11 +218,18 @@
 
       <div class="card seller-card" id="section-stock">
         <h3>Stock de gelo</h3>
-        <p class="text-sm text-muted mb-2">Actualize sempre que o stock mudar. Verde no mapa só se actualizado nas últimas 24h.</p>
+        <p class="text-sm text-muted mb-2">Actualize sempre que o stock mudar. Escolha baldes ou kg (gelo embalado). Verde no mapa com «Tenho gelo disponível» e quantidade > 0.</p>
         <div class="form-row">
           <div class="form-group">
-            <label>Baldes disponíveis</label>
-            <input type="number" id="dash-buckets" min="0" />
+            <label>Unidade</label>
+            <select id="dash-unit">
+              <option value="baldes">Baldes</option>
+              <option value="kg">Quilos (kg) — gelo embalado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label id="dash-qty-label">Quantidade</label>
+            <input type="number" id="dash-buckets" min="0" step="any" />
           </div>
           <div class="form-group">
             <label>Congelamento</label>
@@ -235,6 +249,9 @@
           <span>Tenho gelo disponível</span>
         </label>
         <button class="btn btn-green btn-block mt-2" type="button" id="btn-save-stock">Guardar stock</button>
+        <p class="text-sm text-center mt-2">
+          <a href="seller.html?view=profile#perfil" class="seller-view-switch" id="link-to-profile">Ir para Perfil →</a>
+        </p>
       </div>
 
       <div class="card seller-card" id="section-profile">
@@ -286,6 +303,9 @@
           <button class="btn btn-ghost btn-sm" type="button" id="btn-dash-gps"><svg class="btn-inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg> Usar a minha localização</button>
         </div>
         <button class="btn btn-primary btn-block" type="button" id="btn-save-profile">Guardar perfil</button>
+        <p class="text-sm text-center mt-2">
+          <a href="seller.html?view=stock#stock" class="seller-view-switch" id="link-to-stock">← Ir para Meu stock</a>
+        </p>
       </div>
     </section>
   </main>

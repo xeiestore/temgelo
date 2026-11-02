@@ -1525,3 +1525,13 @@ html.seller-view-profile #section-stock {
 }
 
 /* (seller-has-session / seller-view-* rules are defined with the ad-banner block above) */
+
+.seller-view-switch {
+  color: #93c5fd;
+  text-decoration: none;
+  font-weight: 600;
+}
+.seller-view-switch:hover {
+  text-decoration: underline;
+  color: #bfdbfe;
+}

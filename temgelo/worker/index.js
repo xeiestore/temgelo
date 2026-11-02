@@ -207,6 +207,7 @@ function publicSeller(s) {
     lng: s.lng,
     available: !!s.available,
     buckets: Number(s.buckets) || 0,
+    unit: s.unit === "kg" ? "kg" : "baldes",
     freeze: s.freeze || "muito_congelado",
     price: s.price || "",
     whatsapp: s.whatsapp || "",
@@ -431,7 +432,8 @@ export default {
           neighborhood: String(body.neighborhood || "").trim(),
           price: String(body.price || "").trim(),
           freeze: body.freeze || "muito_congelado",
-          buckets: Math.max(0, parseInt(body.buckets, 10) || 0),
+          buckets: Math.max(0, parseFloat(body.buckets) || 0),
+          unit: body.unit === "kg" ? "kg" : "baldes",
           available: !!body.available,
           notes: String(body.notes || "").trim(),
           status: "approved",
@@ -459,7 +461,7 @@ export default {
           id,
           status: "approved",
           message:
-            "Conta criada. Já pode actualizar o stock e aparecer no mapa."
+            "Conta criada. Dados de perfil e stock já guardados."
         });
       }
 
@@ -532,7 +534,8 @@ export default {
         if (body.neighborhood != null) s.neighborhood = String(body.neighborhood).trim();
         if (body.price != null) s.price = String(body.price).trim();
         if (body.freeze != null) s.freeze = body.freeze;
-        if (body.buckets != null) s.buckets = Math.max(0, parseInt(body.buckets, 10) || 0);
+        if (body.buckets != null) s.buckets = Math.max(0, parseFloat(body.buckets) || 0);
+        if (body.unit != null) s.unit = body.unit === "kg" ? "kg" : "baldes";
         if (body.available != null) s.available = !!body.available;
         if (body.notes != null) s.notes = String(body.notes).trim();
         if (body.whatsapp != null) {
@@ -681,7 +684,8 @@ export default {
           neighborhood: String(body.neighborhood || "").trim(),
           price: String(body.price || "").trim(),
           freeze: body.freeze || "muito_congelado",
-          buckets: Math.max(0, parseInt(body.buckets, 10) || 0),
+          buckets: Math.max(0, parseFloat(body.buckets) || 0),
+          unit: body.unit === "kg" ? "kg" : "baldes",
           available: body.available !== false,
           notes: String(body.notes || "").trim(),
           status: "approved",
@@ -739,7 +743,8 @@ export default {
         if (body.notes != null) s.notes = String(body.notes).trim();
         if (body.price != null) s.price = String(body.price).trim();
         if (body.freeze != null) s.freeze = body.freeze || s.freeze;
-        if (body.buckets != null) s.buckets = Math.max(0, parseInt(body.buckets, 10) || 0);
+        if (body.buckets != null) s.buckets = Math.max(0, parseFloat(body.buckets) || 0);
+        if (body.unit != null) s.unit = body.unit === "kg" ? "kg" : "baldes";
         if (body.available != null) s.available = !!body.available;
         if (body.payments != null) s.payments = normalizePayments(body.payments);
 

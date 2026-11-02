@@ -246,13 +246,13 @@ function renderList() {
           <div class="info">
             <div class="name">${escapeHtml(s.name)}</div>
             <div class="meta">
-              ${userBit}${escapeHtml(s.neighborhood || "")} · ${s.buckets ?? 0} baldes · ${s.price || "—"} Kz
+              ${userBit}${escapeHtml(s.neighborhood || "")} · ${typeof formatStockQty === "function" ? formatStockQty(s) : (s.buckets ?? 0) + (s.unit === "kg" ? " kg" : " baldes")} · ${s.price || "—"} Kz
               <span class="status-pill ${statusClass}">${statusText}</span>
             </div>
           </div>
           <div class="actions">
             <button type="button" title="Editar" onclick="editSeller('${s.id}')" aria-label="Editar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
-            <button type="button" title="Reconfirmar (24h)" onclick="reconfirm('${s.id}')" aria-label="Reconfirmar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg></button>
+            <button type="button" title="Reconfirmar stock" onclick="reconfirm('${s.id}')" aria-label="Reconfirmar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg></button>
             <button type="button" title="Apagar" onclick="deleteSeller('${s.id}')" aria-label="Apagar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
         </div>
@@ -288,6 +288,8 @@ function openSellerModal(id = null) {
     document.getElementById("f-lng").value = s.lng ?? "";
     document.getElementById("f-neighborhood").value = s.neighborhood || "";
     document.getElementById("f-buckets").value = s.buckets ?? 0;
+    const fu = document.getElementById("f-unit");
+    if (fu) fu.value = s.unit === "kg" ? "kg" : "baldes";
     document.getElementById("f-price").value = s.price || "";
     document.getElementById("f-freeze").value = s.freeze || "muito_congelado";
     document.getElementById("f-whatsapp").value = s.whatsapp || "";
@@ -316,6 +318,8 @@ function openSellerModal(id = null) {
     document.getElementById("f-lng").value = "";
     document.getElementById("f-neighborhood").value = "";
     document.getElementById("f-buckets").value = "5";
+    const fu = document.getElementById("f-unit");
+    if (fu) fu.value = "baldes";
     document.getElementById("f-price").value = "1500";
     document.getElementById("f-freeze").value = "muito_congelado";
     document.getElementById("f-whatsapp").value = "";
@@ -344,7 +348,8 @@ function readSellerFormPayload() {
     username: (document.getElementById("f-username")?.value || "").trim(),
     sellerPassword: (document.getElementById("f-seller-password")?.value || "").trim(),
     neighborhood: document.getElementById("f-neighborhood").value.trim(),
-    buckets: parseInt(document.getElementById("f-buckets").value, 10) || 0,
+    buckets: parseFloat(document.getElementById("f-buckets").value) || 0,
+    unit: document.getElementById("f-unit")?.value === "kg" ? "kg" : "baldes",
     price: document.getElementById("f-price").value.trim(),
     freeze: document.getElementById("f-freeze").value,
     whatsapp: document.getElementById("f-whatsapp").value.trim(),
@@ -480,7 +485,7 @@ async function reconfirm(id) {
     });
     if (!res.ok) throw new Error(await res.text());
     await loadSellers();
-    alert("Reconfirmado no servidor! Válido por mais 24 horas no mapa.");
+    alert("Stock reconfirmado no servidor. O mapa usa o estado actual (disponível + baldes).");
   } catch (err) {
     alert("Erro: " + (err && err.message ? err.message : String(err)));
   }
@@ -608,7 +613,7 @@ async function loadAccounts() {
             <div class="meta">
               @${escapeHtml(s.username || s.id || "")}${s.email ? " · " + escapeHtml(s.email) : ""}
               · ${escapeHtml(s.neighborhood || "")}${s.whatsapp ? " · " + escapeHtml(s.whatsapp) : ""}
-              · ${s.buckets ?? 0} baldes
+              · ${typeof formatStockQty === "function" ? formatStockQty(s) : (s.buckets ?? 0) + (s.unit === "kg" ? " kg" : " baldes")}
               <span class="status-pill ${st}">${label}</span>
             </div>
           </div>

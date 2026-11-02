@@ -71,7 +71,29 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-login")?.addEventListener("click", doLogin);
   document.getElementById("btn-register")?.addEventListener("click", doRegister);
   document.getElementById("btn-save-stock")?.addEventListener("click", () => saveMe("stock"));
+  document.getElementById("dash-unit")?.addEventListener("change", updateDashQtyLabel);
+  document.getElementById("reg-unit")?.addEventListener("change", updateRegQtyLabel);
+  updateRegQtyLabel();
+  updateDashQtyLabel();
   document.getElementById("btn-save-profile")?.addEventListener("click", () => saveMe("profile"));
+  document.getElementById("link-to-profile")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    try {
+      sessionStorage.setItem("temgelo_seller_view", "profile");
+    } catch (_) {}
+    history.replaceState(null, "", "seller.html?view=profile#perfil");
+    showDash();
+    applySellerHash();
+  });
+  document.getElementById("link-to-stock")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    try {
+      sessionStorage.setItem("temgelo_seller_view", "stock");
+    } catch (_) {}
+    history.replaceState(null, "", "seller.html?view=stock#stock");
+    showDash();
+    applySellerHash();
+  });
   document.getElementById("btn-reg-gps")?.addEventListener("click", () => useGps("reg"));
   document.getElementById("btn-dash-gps")?.addEventListener("click", () => useGps("dash"));
 
@@ -117,23 +139,23 @@ function applySellerHash() {
   const root = document.documentElement;
   root.classList.remove("seller-view-stock", "seller-view-profile");
 
+  // Priority: hash → ?view= → sessionStorage → path (hash must win so menu can switch)
   let view = "all";
-  if (
-    rawHash === "stock" ||
-    rawHash === "meu-stock" ||
-    params.get("view") === "stock" ||
-    stored === "stock" ||
-    /\/stock(\.html)?$/.test(path)
-  ) {
+  if (rawHash === "stock" || rawHash === "meu-stock") {
+    view = "stock";
+  } else if (rawHash === "perfil" || rawHash === "profile") {
+    view = "profile";
+  } else if (params.get("view") === "stock" || /\/stock(\.html)?$/.test(path)) {
     view = "stock";
   } else if (
-    rawHash === "perfil" ||
-    rawHash === "profile" ||
     params.get("view") === "profile" ||
     params.get("view") === "perfil" ||
-    stored === "profile" ||
     /\/profile(\.html)?$/.test(path)
   ) {
+    view = "profile";
+  } else if (stored === "stock") {
+    view = "stock";
+  } else if (stored === "profile") {
     view = "profile";
   }
 
@@ -271,9 +293,15 @@ function renderDrawerNav() {
       if (a === "stock" || a === "profile") {
         showDash();
         if (a === "profile") {
-          history.replaceState(null, "", "#perfil");
+          try {
+            sessionStorage.setItem("temgelo_seller_view", "profile");
+          } catch (_) {}
+          history.replaceState(null, "", "seller.html?view=profile#perfil");
         } else {
-          history.replaceState(null, "", "#stock");
+          try {
+            sessionStorage.setItem("temgelo_seller_view", "stock");
+          } catch (_) {}
+          history.replaceState(null, "", "seller.html?view=stock#stock");
         }
         applySellerHash();
       }
@@ -412,7 +440,8 @@ async function doRegister() {
     lat: parseFloat(document.getElementById("reg-lat").value),
     lng: parseFloat(document.getElementById("reg-lng").value),
     price: document.getElementById("reg-price").value.trim(),
-    buckets: parseInt(document.getElementById("reg-buckets").value, 10) || 0,
+    unit: document.getElementById("reg-unit")?.value === "kg" ? "kg" : "baldes",
+    buckets: parseFloat(document.getElementById("reg-buckets").value) || 0,
     freeze: document.getElementById("reg-freeze").value,
     available: document.getElementById("reg-available").checked
   };
@@ -455,11 +484,18 @@ async function doRegister() {
     writeToken(token, true);
     me = loginData.seller;
     saveSellerProfile(me, true);
-    alert(
-      "Conta criada. Já está na área do vendedor.\n\n" +
-        "Actualize o stock para aparecer no mapa público."
-    );
-    showDash();
+    // Profile + stock already saved at register — do not open seller dashboard / "Guardar perfil".
+    // Land on the public map; hamburger has Meu stock / Perfil when needed.
+    try {
+      sessionStorage.removeItem("temgelo_seller_view");
+    } catch (_) {}
+    const onMap =
+      me && me.available && Number(me.buckets) > 0
+        ? "Com gelo disponível, já pode aparecer no mapa."
+        : "No menu (☰) use Meu stock para publicar gelo.";
+    alert("Conta criada com sucesso.\n\n" + onMap);
+    window.location.replace("./index.html");
+    return;
   } catch (err) {
     alert(err.message || "Erro ao registar");
   }
@@ -493,7 +529,10 @@ async function loadMe() {
 function fillDash() {
   if (!me) return;
   document.getElementById("dash-buckets").value = me.buckets ?? 0;
+  const unitEl = document.getElementById("dash-unit");
+  if (unitEl) unitEl.value = me.unit === "kg" ? "kg" : "baldes";
   document.getElementById("dash-freeze").value = me.freeze || "muito_congelado";
+  updateDashQtyLabel();
   document.getElementById("dash-price").value = me.price || "";
   document.getElementById("dash-available").checked = !!me.available;
   document.getElementById("dash-name").value = me.name || "";
@@ -525,15 +564,28 @@ function fillDash() {
   } else {
     banner.classList.add("approved");
     banner.textContent =
-      "Conta activa – visível no mapa quando tiver gelo disponível (actualizado nas últimas 24h).";
+      "Conta activa – visível no mapa quando marcar gelo disponível e quantidade > 0.";
   }
+}
+
+
+function updateDashQtyLabel() {
+  const unit = document.getElementById("dash-unit")?.value === "kg" ? "kg" : "baldes";
+  const label = document.getElementById("dash-qty-label");
+  if (label) label.textContent = unit === "kg" ? "Quantidade (kg)" : "Quantidade (baldes)";
+}
+function updateRegQtyLabel() {
+  const unit = document.getElementById("reg-unit")?.value === "kg" ? "kg" : "baldes";
+  const label = document.getElementById("reg-qty-label");
+  if (label) label.textContent = unit === "kg" ? "Quantidade (kg)" : "Quantidade (baldes)";
 }
 
 async function saveMe(mode) {
   if (!me) return;
   const body = {};
   if (mode === "stock") {
-    body.buckets = parseInt(document.getElementById("dash-buckets").value, 10) || 0;
+    body.buckets = parseFloat(document.getElementById("dash-buckets").value) || 0;
+    body.unit = document.getElementById("dash-unit")?.value === "kg" ? "kg" : "baldes";
     body.freeze = document.getElementById("dash-freeze").value;
     body.price = document.getElementById("dash-price").value.trim();
     body.available = document.getElementById("dash-available").checked;
