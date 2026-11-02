@@ -4,11 +4,11 @@ compatibility_date = "2024-09-23"
 workers_dev = true
 preview_urls = true
 
-# KV for seller accounts + sessions
+# KV for seller accounts + sessions + site texts + public catalog
 [[kv_namespaces]]
 binding = "SELLERS"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+id = "986f9ef7011645aa9145f268ccd6941f"
+preview_id = "d636302a77094cb7b8db1947a8f821b9"
 
 # Secrets (set with: wrangler secret put NAME)
 # ADMIN_PASSWORD
