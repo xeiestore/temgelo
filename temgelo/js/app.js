@@ -6,7 +6,8 @@ const CATALOG_FALLBACK =
   "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
 const POLL_MS = 30000; // refresh map every 30s
 
-let sellers = [...DEFAULT_SELLERS];
+// Empty until live catalog loads — avoids brief flash of demo/seed pins
+let sellers = [];
 let texts = { ...DEFAULT_TEXTS };
 let siteImages = {};
 let map;
@@ -14,6 +15,7 @@ let markersLayer;
 let lastCatalogAt = null;
 let pendingReportSellerId = "";
 let pendingReportSellerName = "";
+let catalogLoadedOnce = false;
 
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
@@ -36,11 +38,14 @@ function hideSafetyShowAds() {
   const ads = document.getElementById("ad-banner");
   if (!safety) return;
   safety.classList.add("is-hiding");
-  setTimeout(() => {
+  window.setTimeout(() => {
     safety.classList.add("hidden");
     safety.classList.remove("is-hiding");
-    if (ads) ads.classList.remove("hidden");
-  }, 350);
+    if (ads) {
+      ads.classList.remove("hidden");
+      ads.style.display = "flex";
+    }
+  }, 320);
 }
 
 function showSafetyTemporarily() {
@@ -51,13 +56,18 @@ function showSafetyTemporarily() {
     clearTimeout(safetyHideTimer);
     safetyHideTimer = null;
   }
-  if (ads) ads.classList.add("hidden");
+  if (ads) {
+    ads.classList.add("hidden");
+    ads.style.display = "";
+  }
   safety.classList.remove("hidden", "is-hiding");
-  safetyHideTimer = setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
+  safetyHideTimer = window.setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
 }
 
 function setupBottomSlot() {
-  document.getElementById("safety-close-btn")?.addEventListener("click", () => {
+  document.getElementById("safety-close-btn")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (safetyHideTimer) {
       clearTimeout(safetyHideTimer);
       safetyHideTimer = null;
@@ -65,7 +75,15 @@ function setupBottomSlot() {
     hideSafetyShowAds();
   });
   // Auto-dismiss safety after 10s → partner ad strip
-  safetyHideTimer = setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
+  if (safetyHideTimer) clearTimeout(safetyHideTimer);
+  safetyHideTimer = window.setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
+  window.addEventListener("load", () => {
+    const safety = document.getElementById("safety-banner");
+    if (safety && !safety.classList.contains("hidden")) {
+      if (safetyHideTimer) clearTimeout(safetyHideTimer);
+      safetyHideTimer = window.setTimeout(hideSafetyShowAds, SAFETY_AUTO_HIDE_MS);
+    }
+  });
   window.showSafetyBanner = showSafetyTemporarily;
 }
 
@@ -93,7 +111,7 @@ function initMap() {
   }).addTo(map);
 
   markersLayer = L.layerGroup().addTo(map);
-  renderMarkers();
+  // No seed markers — wait for live catalog in loadCatalog()
 }
 
 // ---------- Load live catalog ----------
@@ -120,9 +138,9 @@ async function loadCatalog() {
   }
 
   if (data) {
-    // Skip re-render if nothing changed
+    // Skip re-render if nothing changed (after first successful paint)
     const stamp = data.updatedAt || JSON.stringify(data.sellers || []).slice(0, 200);
-    if (stamp === lastCatalogAt) return;
+    if (catalogLoadedOnce && stamp === lastCatalogAt) return;
     lastCatalogAt = stamp;
 
     if (Array.isArray(data.sellers)) {
@@ -135,14 +153,18 @@ async function loadCatalog() {
     if (data.images && typeof data.images === "object") {
       siteImages = data.images;
     }
+    catalogLoadedOnce = true;
+  } else if (!catalogLoadedOnce) {
+    // Network failed on first load — keep map empty (no demo pins)
+    sellers = [];
   }
 
   applyTexts();
   applyImages();
   renderMarkers();
   updateCount();
-  // Only fit bounds on first successful load
-  if (!loadCatalog._fitted && sellers.length) {
+  // Only fit bounds on first successful load with sellers
+  if (!loadCatalog._fitted && catalogLoadedOnce && sellers.length) {
     fitToSellers();
     loadCatalog._fitted = true;
   }

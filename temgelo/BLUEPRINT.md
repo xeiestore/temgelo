@@ -148,10 +148,10 @@ Never commit the real password to a public repo.
 
 ## Hamburger menu
 - **Public map (guest):** Entrar, Criar conta, Segurança, Instalar app, Reportar um problema
-- **Public map (logged-in seller):** Meu stock (`seller.html#stock`), Perfil (`seller.html#perfil`), Sair, Segurança, Instalar app, Reportar — no single “Área do vendedor” link
-- **Seller portal:** Meu stock, Perfil, mapa público, Sair
+- **Public map (logged-in seller):** Meu stock (`stock.html` → `seller.html#stock`), Perfil (`profile.html` → `seller.html#perfil`), Sair, Segurança, Instalar app, Reportar
+- **Seller portal:** exclusive views — stock page hides Perfil; profile page hides Stock
 - Menu opens from the **left**
-- **Login flash:** if a session token exists, `seller.html` hides the Entrar screen before paint (`html.seller-has-session`) so the dashboard shows immediately while `/seller/me` loads
+- **Login flash:** head script sets `html.seller-has-session` before paint when a token exists so Entrar never flashes
 
 ## PWA
 - `start_url`: `/index.html` (always the map with hamburger)

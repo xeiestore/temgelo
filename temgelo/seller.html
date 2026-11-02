@@ -12,17 +12,24 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="css/styles.css" />
-</head>
-<body class="seller-body">
-  <!-- Avoid login flash when a session token already exists -->
+  <!-- Before paint: hide login if session exists; lock stock or profile view from hash -->
   <script>
     (function () {
       try {
         var t = localStorage.getItem("temgelo_seller_token") || sessionStorage.getItem("temgelo_seller_token");
         if (t) document.documentElement.classList.add("seller-has-session");
+        var h = (location.hash || "").toLowerCase();
+        var path = (location.pathname || "").toLowerCase();
+        if (h === "#stock" || h === "#meu-stock" || /stock\.html$/.test(path)) {
+          document.documentElement.classList.add("seller-view-stock");
+        } else if (h === "#perfil" || h === "#profile" || /profile\.html$/.test(path)) {
+          document.documentElement.classList.add("seller-view-profile");
+        }
       } catch (_) {}
     })();
   </script>
+</head>
+<body class="seller-body">
   <!-- Top bar -->
   <header class="seller-topbar">
     <button type="button" class="hamburger-btn" id="hamburger-btn" aria-label="Menu" aria-expanded="false">

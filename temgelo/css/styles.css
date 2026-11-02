@@ -126,6 +126,7 @@ html, body {
 /* Partner ads strip (replaces safety after auto-hide) */
 .ad-banner {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -139,7 +140,7 @@ html, body {
   box-shadow: 0 -4px 16px rgba(0,0,0,0.35);
 }
 .ad-banner.hidden {
-  display: none;
+  display: none !important;
 }
 .ad-banner-label {
   flex-shrink: 0;
@@ -164,8 +165,8 @@ html, body {
   font-weight: 700;
 }
 .ad-banner-cta {
-  flex-shrink: 0;
-  display: inline-flex;
+  flex: 0 0 auto;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   padding: 7px 12px;
@@ -178,21 +179,48 @@ html, body {
   white-space: nowrap;
   border: none;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 .ad-banner-cta:hover,
 .ad-banner-cta:active {
   background: #1d4ed8;
   color: #fff !important;
 }
-@media (max-width: 420px) {
+@media (max-width: 520px) {
   .ad-banner {
+    flex-wrap: wrap;
     gap: 8px;
     font-size: 0.72rem;
+    justify-content: flex-start;
+  }
+  .ad-banner-body {
+    flex: 1 1 calc(100% - 90px);
+    order: 2;
+  }
+  .ad-banner-label {
+    order: 1;
   }
   .ad-banner-cta {
+    order: 3;
+    margin-left: auto;
     padding: 7px 10px;
     font-size: 0.7rem;
   }
+}
+
+/* Seller: no login flash + exclusive stock / profile views */
+html.seller-has-session #screen-auth {
+  display: none !important;
+}
+html.seller-has-session #screen-dash {
+  display: block !important;
+}
+html.seller-view-stock #section-profile {
+  display: none !important;
+}
+html.seller-view-profile #section-stock {
+  display: none !important;
 }
 
 /* Raise Leaflet +/- above bottom ad/safety strip */
@@ -1482,10 +1510,4 @@ html, body {
   justify-content: flex-end;
 }
 
-/* Seller: hide login flash when a session token is already present */
-html.seller-has-session #screen-auth {
-  display: none !important;
-}
-html.seller-has-session #screen-dash {
-  display: block !important;
-}
+/* (seller-has-session / seller-view-* rules are defined with the ad-banner block above) */
