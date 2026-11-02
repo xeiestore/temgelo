@@ -189,7 +189,7 @@ async function saveTexts() {
     document.getElementById("catalog-status").textContent =
       "Textos publicados no servidor (" +
       (data.count ?? "?") +
-      " vendedores aprovados) – " +
+      " vendedores activos) – " +
       new Date().toLocaleString("pt-AO");
     alert("Textos guardados e publicados. Permanecem após redeploy.");
   } catch (err) {
@@ -419,7 +419,7 @@ async function publishCatalog() {
     }
 
     document.getElementById("catalog-status").textContent =
-      "Publicado (" + count + " aprovados + textos) – " + new Date().toLocaleString("pt-AO");
+      "Publicado (" + count + " activos + textos) – " + new Date().toLocaleString("pt-AO");
     alert("Publicado! Textos ficam no KV e sobrevivem a redeploys.");
   } catch (err) {
     const msg = err && err.message ? err.message : String(err);
@@ -463,16 +463,15 @@ async function loadAccounts() {
       container.innerHTML = `<p class="text-muted text-sm">Nenhuma conta registada ainda.</p>`;
       return;
     }
-    // pending first
+    // Active first, banned last
     list.sort((a, b) => {
-      const order = { pending: 0, approved: 1, banned: 2 };
-      return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+      const order = { approved: 0, pending: 1, banned: 2 };
+      return (order[a.status] ?? 1) - (order[b.status] ?? 1);
     });
     container.innerHTML = list
       .map((s) => {
-        const st = s.status || "pending";
-        const label =
-          st === "approved" ? "Aprovado" : st === "banned" ? "Bloqueado" : "Pendente";
+        const st = s.status === "banned" ? "banned" : "approved";
+        const label = st === "banned" ? "Bloqueado" : "Activo";
         return `
         <div class="seller-item">
           <div class="info">
@@ -486,14 +485,9 @@ async function loadAccounts() {
           </div>
           <div class="actions">
             ${
-              st !== "approved"
-                ? `<button type="button" title="Aprovar" onclick="moderateAccount('${s.id}','approve')" aria-label="Aprovar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></button>`
-                : ""
-            }
-            ${
-              st !== "banned"
-                ? `<button type="button" title="Bloquear" onclick="moderateAccount('${s.id}','ban')" aria-label="Bloquear"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.92 7.92 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.92 7.92 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></button>`
-                : ""
+              st === "banned"
+                ? `<button type="button" title="Reactivar" onclick="moderateAccount('${s.id}','approve')" aria-label="Reactivar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></button>`
+                : `<button type="button" title="Bloquear" onclick="moderateAccount('${s.id}','ban')" aria-label="Bloquear"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.92 7.92 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.92 7.92 0 0 1 20 12c0 4.42-3.58 8-8 8z"/></svg></button>`
             }
             <button type="button" title="Apagar" onclick="moderateAccount('${s.id}','delete')" aria-label="Apagar"><svg class="action-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
           </div>
@@ -506,7 +500,7 @@ async function loadAccounts() {
 }
 
 async function moderateAccount(sellerId, action) {
-  const labels = { approve: "aprovar", ban: "bloquear", delete: "apagar" };
+  const labels = { approve: "reactivar", ban: "bloquear", delete: "apagar" };
   if (!confirm("Tem a certeza que quer " + (labels[action] || action) + " esta conta?")) return;
   try {
     const res = await fetch(API_BASE + "/admin/moderate", {
@@ -540,7 +534,7 @@ async function republishFromAccounts() {
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     document.getElementById("catalog-status").textContent =
-      "Republicado a partir das contas (" + (data.count ?? "?") + " aprovados).";
+      "Republicado a partir das contas (" + (data.count ?? "?") + " activos).";
     alert("Catálogo público actualizado.");
   } catch (err) {
     alert("Erro: " + err.message);

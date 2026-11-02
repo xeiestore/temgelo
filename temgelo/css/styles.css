@@ -1247,3 +1247,129 @@ html, body {
   color: #e2e8f0;
 }
 .text-center { text-align: center; }
+
+/* ---------- Install sheet (iOS / fallback) ---------- */
+.install-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.install-sheet.hidden {
+  display: none;
+}
+.install-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+}
+.install-sheet-card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow: auto;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px 16px 0 0;
+  padding: 18px 18px 22px;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+  color: #e2e8f0;
+}
+@media (min-width: 640px) {
+  .install-sheet {
+    align-items: center;
+    padding: 16px;
+  }
+  .install-sheet-card {
+    border-radius: 16px;
+  }
+}
+.install-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.install-sheet-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+.install-sheet-close {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.install-sheet-lead {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+.install-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.install-steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #e2e8f0;
+}
+.install-steps .step-num {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.install-steps .share-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: -3px;
+  margin: 0 2px;
+  color: #93c5fd;
+}
+.install-sheet-note {
+  margin: 14px 0 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+.install-steps-plain {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #e2e8f0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.install-steps-plain li + li {
+  margin-top: 8px;
+}
+.install-sheet-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}

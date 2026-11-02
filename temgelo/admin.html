@@ -261,8 +261,9 @@
             <button class="btn btn-ghost" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="loadAccounts()">Actualizar</button>
           </h3>
           <p class="text-sm text-muted mb-2">
-            Contas criadas em <code>seller.html</code>. Aprove para aparecerem no mapa.
-            Pendentes não são públicos.
+            Contas criadas em <code>seller.html</code>. Novas contas ficam activas e
+            aparecem no mapa de imediato (se tiverem gelo disponível e actualizado).
+            Use <strong>Bloquear</strong> para as retirar do mapa.
           </p>
           <div id="accounts-list" class="seller-list"></div>
         </div>
@@ -326,7 +327,7 @@
             O mapa público vai mostrar as alterações em poucos segundos.
           </p>
           <button class="btn btn-primary mt-2" type="button" onclick="republishFromAccounts()">
-            Republicar a partir das contas aprovadas
+            Republicar a partir das contas activas
           </button>
         </div>
       </section>

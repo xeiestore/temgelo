@@ -4,6 +4,10 @@ App for people in Angola to find ice buckets near them.
 
 **Live:** https://temgelo.pages.dev
 
+## Documentation rule
+
+Keep this file and `README.md` in sync with behaviour. **After every important change, update both docs in the same change** (auth, map visibility, admin, API, PWA, deploy). See README “Documentation rule (standing order)”.
+
 ## Stack
 - HTML / CSS / JS (no framework)
 - Leaflet + OpenStreetMap
@@ -18,7 +22,7 @@ App for people in Angola to find ice buckets near them.
 temgelo/
 ├── index.html          # Public map + auth-aware hamburger
 ├── seller.html         # Seller register / login / stock / profile
-├── admin.html          # Admin + moderation
+├── admin.html          # Admin + moderation (block / reactivate)
 ├── manifest.json       # PWA (start_url: /index.html)
 ├── sw.js               # Service worker (does not cache catalog/API)
 ├── css/styles.css
@@ -26,7 +30,8 @@ temgelo/
 │   ├── sellers.js      # Defaults + helpers
 │   ├── app.js          # Public map (polls catalog every 30s)
 │   ├── admin.js        # Admin + moderation
-│   └── seller.js       # Seller portal
+│   ├── seller.js       # Seller portal
+│   └── install.js      # PWA install (native prompt or iOS sheet)
 ├── icons/
 ├── images/
 ├── worker/
@@ -38,10 +43,10 @@ temgelo/
 
 ## Public catalog (fast updates)
 
-After **Publicar** / **Guardar textos** (or seller stock update / approve):
+After **Publicar** / **Guardar textos** / **Republicar**, or after **register** / seller stock-profile update / moderate:
 
-1. Site texts are stored in **KV** `meta:texts` (durable across Worker and Pages redeploys).
-2. Worker rebuilds catalog from **approved accounts** + `meta:texts` → **KV** `meta:public_catalog`.
+1. Site texts (and images) are stored in **KV** `meta:texts` / `meta:images` (durable across Worker and Pages redeploys).
+2. Worker rebuilds catalog from **non-banned accounts** + those metas → **KV** `meta:public_catalog`.
 3. Worker also uploads to Cloudinary with **`invalidate=true`** (backup).
 4. Map loads **`GET /catalog`** from the Worker (`Cache-Control: no-store`). On read, empty catalog texts are healed from `meta:texts`.
 5. Fallback: Cloudinary URL if Worker fails.
@@ -54,16 +59,16 @@ Changes should appear within about 0–30 seconds (or immediately on refresh).
 ## Seller accounts
 
 1. Guest opens hamburger → **Entrar** or **Criar conta** → `seller.html`.
-2. **Register:** public name, **username** (required), **email** (optional), password, map pin; WhatsApp is optional contact for the map only.
-3. Account stored in **KV** with `status: "pending"`.
-4. Admin → **Moderação** → Aprovar / Bloquear / Apagar.
-5. On approve, Worker rebuilds public catalog (approved sellers only) → KV + Cloudinary.
-6. Seller updates stock/profile; if approved, catalog is republished automatically.
+2. **Register:** public name, **username** (required), **email** (optional), password, map pin; WhatsApp / phone optional (map contact); payments optional.
+3. Account stored in **KV** with **`status: "approved"`** (active immediately — **no pending gate**).
+4. Worker rebuilds the public catalog on register so the seller can appear on the map right away.
+5. Admin → **Moderação**: **Bloquear** (removes from map), **Reactivar** (after ban), **Apagar**. UI labels accounts **Activo** / **Bloqueado** only.
+6. Seller updates stock/profile; if not banned, catalog is republished automatically.
 
 ### Auth
 - **Username** (required, 3–24: `a-z` `0-9` `_`) and optional **email**
 - Login with **username or email** + password (not WhatsApp)
-- WhatsApp = contact field on the public map only
+- WhatsApp / phone = contact fields on the public map only
 - Password: PBKDF2-SHA256 (100k iterations) in the Worker
 - Session: Bearer token in KV (30 days); **Manter sessão iniciada** defaults on (`localStorage`), off uses `sessionStorage`
 - Show/hide password toggles on admin + seller forms
@@ -72,13 +77,17 @@ Changes should appear within about 0–30 seconds (or immediately on refresh).
 | Field | Notes |
 |--------|--------|
 | id, username, email, passwordHash/Salt | System |
-| name, lat, lng, neighborhood, notes, whatsapp | Profile (whatsapp = map contact) |
+| name, lat, lng, neighborhood, notes, whatsapp, phone | Profile (whatsapp/phone = map contact) |
+| payments | numerario, multicaixa, unitel, other |
 | price, freeze, buckets, available | Stock |
-| status | `pending` \| `approved` \| `banned` |
+| status | `approved` (active) \| `banned` — new signups are always `approved` |
 | createdAt, updatedAt | Timestamps |
 
 ### 24-hour rule
 Green on map only if `available && buckets > 0 && updatedAt < 24h`.
+
+### Map visibility
+Anyone **not banned** can appear in the public catalog. There is no approval step before map visibility.
 
 ## Worker API
 
@@ -87,15 +96,17 @@ Base: `https://tem-gelo-publish.xeieloja.workers.dev`
 | Method | Path | Auth |
 |--------|------|------|
 | **GET** | **`/catalog`** | public (live map data from KV) |
-| POST | `/publish` | admin password (push full catalog) |
-| POST | `/auth/register` | public |
+| POST | `/publish` | admin password (push full catalog; prefers live accounts when any exist) |
+| POST | `/auth/register` | public → creates **approved** account + rebuilds catalog |
 | POST | `/auth/login` | public → session token |
 | POST | `/auth/logout` | Bearer |
 | GET | `/seller/me` | Bearer |
 | PATCH | `/seller/me` | Bearer |
 | GET | `/admin/sellers?password=` | admin |
-| POST | `/admin/moderate` | admin (`approve` \| `ban` \| `delete`) |
+| POST | `/admin/moderate` | admin (`approve` = reactivate \| `ban` \| `delete`) |
 | POST | `/admin/republish` | admin |
+| POST | `/report` | public (in-app report, not WhatsApp) |
+| GET | `/admin/reports?password=` | admin |
 
 ### KV binding `SELLERS`
 - `seller:{id}` — account
@@ -103,7 +114,9 @@ Base: `https://tem-gelo-publish.xeieloja.workers.dev`
 - `session:{token}` — sessions
 - `meta:index` — list of seller ids
 - `meta:texts` — site texts
+- `meta:images` — site image URLs
 - `meta:public_catalog` — JSON served by `GET /catalog`
+- `report:{id}` / `meta:report_index` — user reports
 
 ### Deploy Worker + KV
 ```bash
@@ -131,8 +144,8 @@ Must match in:
 Never commit the real password to a public repo.
 
 ## Hamburger menu
-- **Public map (guest):** Entrar, Criar conta, Segurança
-- **Public map (logged-in seller):** Área do vendedor (stock, perfil, painel, sair), Segurança
+- **Public map (guest):** Entrar, Criar conta, Segurança, Instalar app, Reportar um problema
+- **Public map (logged-in seller):** Área do vendedor (stock, perfil, painel, sair), Segurança, Instalar app, Reportar
 - **Seller portal:** Stock, Perfil, mapa público, Sair
 - Menu opens from the **left**
 
@@ -140,23 +153,27 @@ Never commit the real password to a public repo.
 - `start_url`: `/index.html` (always the map with hamburger)
 - Logo links to `/index.html`
 - SW cache versioned; HTML network-first; catalog/API never cached
+- **Install:** `js/install.js`
+  - Chromium: native prompt via `beforeinstallprompt` when available
+  - **iOS:** no one-tap install API; **Instalar app** shows a guided sheet (Safari → Partilhar → Adicionar ao Ecrã Principal)
 
 ## Safety
-Prominent red banner + report via WhatsApp. Number editable in Admin → Textos.
+Prominent red banner + report via WhatsApp and in-app `/report`. Number editable in Admin → Textos.
 
 ## Deploy checklist
 1. KV namespace id in `wrangler.toml`
 2. Same password in `admin.js` and Worker secret
 3. Cloudinary secrets on Worker
 4. `npx wrangler deploy`
-5. Deploy static files to Cloudflare Pages (include `seller.html`)
-6. Admin → **Publicar** once (seeds KV catalog)
-7. Test: register → approve → update stock → map within ~30s
+5. Deploy static files to Cloudflare Pages (include `seller.html`, `install.js`)
+6. Admin → **Publicar** / **Republicar** once if catalog empty
+7. Test: register → update stock → map within ~30s (no approval wait); ban → disappears from map
 
 ## Current status
 - Public map + left hamburger (auth-aware)
-- Seller accounts (username/email + password)
-- Admin moderation
+- Seller accounts: register → **active immediately** (no pending)
+- Admin: block / reactivate / delete; copy talks about **activos**, not approvals
 - Live catalog via Worker KV (`GET /catalog`) + 30s poll
 - Cloudinary backup with CDN invalidate
-- PWA installable
+- PWA installable (native on Chromium; guided sheet on iOS)
+- In-app user reports
