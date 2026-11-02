@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
+  <title>Admin – Tem Gelo?</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="admin-body">
+  <!-- Login screen -->
+  <div id="login-screen" class="login-box">
+    <div style="text-align:center;margin-bottom:16px">
+      <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="48" style="height:48px;width:auto;" />
+    </div>
+    <h2 style="text-align:center;margin-bottom:8px">Admin</h2>
+    <div class="password-field">
+      <input type="password" id="admin-password" placeholder="Palavra-passe" autocomplete="current-password" />
+      <button type="button" class="password-toggle" data-target="admin-password" aria-label="Mostrar palavra-passe" title="Mostrar / ocultar">
+        <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+        <svg class="icon-eye-off hidden" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 4.27 3.28 3 21 20.72 19.73 22l-2.2-2.2C15.9 20.56 14 21 12 21 5 21 2 14 2 14a18.5 18.5 0 0 1 5.06-6.28L2 4.27zM12 7a5 5 0 0 1 5 5c0 .7-.15 1.36-.4 1.96l-1.57-1.57A3 3 0 0 0 12 9a3 3 0 0 0-2.39 1.19L7.96 8.54A4.96 4.96 0 0 1 12 7zm0 12c2.04 0 3.87-.53 5.4-1.34l-1.55-1.55c-.96.55-2.1.89-3.85.89a5 5 0 0 1-5-5c0-.45.07-.88.18-1.29L5.1 9.63A16.1 16.1 0 0 0 4.05 14S7 19 12 19z"/></svg>
+      </button>
+    </div>
+    <label class="checkbox-row stay-row">
+      <input type="checkbox" id="admin-stay" checked />
+      <span>Manter sessão iniciada</span>
+    </label>
+    <button class="btn btn-primary" type="button" onclick="tryLogin()">Entrar</button>
+    <p class="text-sm text-muted mt-2" style="text-align:center">
+      Só o administrador pode gerir os vendedores.
+    </p>
+  </div>
+
+  <!-- Main admin -->
+  <div id="admin-screen" class="admin-layout hidden">
+    <!-- Left sidebar (full height) -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-brand">
+        <img src="images/logo-header-dark.png" alt="Tem Gelo?" />
+        <span>Admin</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button type="button" class="sidebar-link active" data-section="sellers" onclick="showSection('sellers')">
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M21 16.5c0 .83-.67 1.5-1.5 1.5h-15c-.83 0-1.5-.67-1.5-1.5v-9c0-.83.67-1.5 1.5-1.5H7l2-2h6l2 2h2.5c.83 0 1.5.67 1.5 1.5v9zM12 18a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0-2a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></span>
+          <span class="sidebar-label">Vendedores</span>
+        </button>
+        <button type="button" class="sidebar-link" data-section="moderation" onclick="showSection('moderation'); loadAccounts()">
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></span>
+          <span class="sidebar-label">Moderação</span>
+        </button>
+        <button type="button" class="sidebar-link" data-section="texts" onclick="showSection('texts')">
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+          <span class="sidebar-label">Textos</span>
+        </button>
+        <button type="button" class="sidebar-link" data-section="catalog" onclick="showSection('catalog')">
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
+          <span class="sidebar-label">Catálogo</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-actions">
+        <button class="btn btn-green sidebar-btn" type="button" onclick="publishCatalog()">Publicar</button>
+        <a class="btn btn-ghost sidebar-btn" href="/" target="_blank">Ver mapa</a>
+        <button class="btn btn-ghost sidebar-btn" type="button" onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="admin-main">
+      <section id="section-sellers" class="admin-section">
+        <div class="card">
+          <h3>
+            Vendedores
+            <button class="btn btn-primary" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="openSellerModal()">+ Adicionar</button>
+          </h3>
+          <div id="seller-list" class="seller-list"></div>
+        </div>
+      </section>
+
+      <section id="section-texts" class="admin-section hidden">
+        <div class="card">
+          <h3>Textos do site</h3>
+          <p class="text-sm text-muted mb-2">
+            Altere os textos do mapa público. Depois clique em <strong>Publicar</strong>.
+          </p>
+
+          <div class="form-group">
+            <label>Título da página</label>
+            <input type="text" id="t-pageTitle" />
+          </div>
+          <div class="form-group">
+            <label>Descrição (SEO / partilha)</label>
+            <input type="text" id="t-pageDescription" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Legenda – tem gelo</label>
+              <input type="text" id="t-legendOk" />
+            </div>
+            <div class="form-group">
+              <label>Legenda – sem gelo</label>
+              <input type="text" id="t-legendNo" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Banner de segurança – título</label>
+            <input type="text" id="t-safetyTitle" />
+          </div>
+          <div class="form-group">
+            <label>Banner de segurança – texto</label>
+            <textarea id="t-safetyBody" rows="3"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Estado no popup – OK</label>
+              <input type="text" id="t-statusOk" />
+            </div>
+            <div class="form-group">
+              <label>Estado no popup – sem</label>
+              <input type="text" id="t-statusNo" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Label: Baldes</label>
+              <input type="text" id="t-labelBuckets" />
+            </div>
+            <div class="form-group">
+              <label>Label: Congelamento</label>
+              <input type="text" id="t-labelFreeze" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Label: Preço</label>
+              <input type="text" id="t-labelPrice" />
+            </div>
+            <div class="form-group">
+              <label>Label: Atualizado</label>
+              <input type="text" id="t-labelUpdated" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Botão WhatsApp</label>
+            <input type="text" id="t-btnWhatsApp" />
+          </div>
+          <div class="form-group">
+            <label>Botão Reportar</label>
+            <input type="text" id="t-btnReport" />
+          </div>
+          <div class="form-group">
+            <label>Mensagem WhatsApp (ao contactar vendedor)</label>
+            <textarea id="t-waMessage" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem de report ({name} e {id} são substituídos)</label>
+            <textarea id="t-reportMessage" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Contagem no topo ({available} e {total})</label>
+            <input type="text" id="t-countFormat" />
+          </div>
+          <div class="form-group">
+            <label>WhatsApp do admin (para reports, com código do país)</label>
+            <input type="text" id="t-adminWhatsApp" placeholder="2449xxxxxxxx" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Congelamento: muito</label>
+              <input type="text" id="t-freezeMuito" />
+            </div>
+            <div class="form-group">
+              <label>Congelamento: parcial</label>
+              <input type="text" id="t-freezeParcial" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Congelamento: fraco</label>
+            <input type="text" id="t-freezeFraco" />
+          </div>
+
+          <button class="btn btn-primary" type="button" onclick="saveTexts()">Guardar textos</button>
+        </div>
+      </section>
+
+      <section id="section-moderation" class="admin-section hidden">
+        <div class="card">
+          <h3>
+            Contas de vendedores
+            <button class="btn btn-ghost" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="loadAccounts()">Actualizar</button>
+          </h3>
+          <p class="text-sm text-muted mb-2">
+            Contas criadas em <code>seller.html</code>. Aprove para aparecerem no mapa.
+            Pendentes não são públicos.
+          </p>
+          <div id="accounts-list" class="seller-list"></div>
+        </div>
+      </section>
+
+      <section id="section-catalog" class="admin-section hidden">
+        <div class="card">
+          <h3>Estado do catálogo</h3>
+          <p class="text-sm text-muted" id="catalog-status">A carregar…</p>
+          <p class="text-sm mt-2">
+            Depois de editar, clique em <strong>Publicar</strong> para enviar para o Cloudinary.
+            O mapa público vai mostrar as alterações em poucos segundos.
+          </p>
+          <button class="btn btn-primary mt-2" type="button" onclick="republishFromAccounts()">
+            Republicar a partir das contas aprovadas
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Seller modal -->
+  <div id="seller-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 id="modal-title">Adicionar vendedor</h3>
+      <input type="hidden" id="seller-id" />
+
+      <div class="form-group">
+        <label>Nome / identificação</label>
+        <input type="text" id="f-name" placeholder="Ex: João – Lubango" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" id="f-lat" step="any" placeholder="-12.776" />
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" id="f-lng" step="any" placeholder="15.739" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Bairro / zona</label>
+        <input type="text" id="f-neighborhood" placeholder="Lubango, Benguela, Huambo…" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Baldes disponíveis</label>
+          <input type="number" id="f-buckets" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label>Preço (Kz)</label>
+          <input type="text" id="f-price" placeholder="1500" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nível de congelamento</label>
+        <select id="f-freeze">
+          <option value="muito_congelado">Muito congelado</option>
+          <option value="parcial">Parcialmente congelado</option>
+          <option value="fraco">Fraco / a derreter</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>WhatsApp (com código do país)</label>
+        <input type="text" id="f-whatsapp" placeholder="2449xxxxxxxx" />
+      </div>
+
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <textarea id="f-notes" rows="2" placeholder="Horário, tamanho dos baldes…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="f-available" checked />
+          Tem gelo disponível agora
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" onclick="closeSellerModal()">Cancelar</button>
+        <button class="btn btn-green" type="button" onclick="saveSeller()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sellers.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    document.querySelectorAll(".password-toggle").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById(btn.getAttribute("data-target"));
+        if (!input) return;
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        btn.querySelector(".icon-eye")?.classList.toggle("hidden", show);
+        btn.querySelector(".icon-eye-off")?.classList.toggle("hidden", !show);
+        btn.setAttribute("aria-label", show ? "Ocultar palavra-passe" : "Mostrar palavra-passe");
+      });
+    });
+  </script>
+</body>
+</html>
