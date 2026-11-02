@@ -416,7 +416,8 @@ async function loadAccounts() {
           <div class="info">
             <div class="name">${escapeHtml(s.name)}</div>
             <div class="meta">
-              ${escapeHtml(s.neighborhood || "")} · ${escapeHtml(s.whatsapp || "")}
+              @${escapeHtml(s.username || s.id || "")}${s.email ? " · " + escapeHtml(s.email) : ""}
+              · ${escapeHtml(s.neighborhood || "")}${s.whatsapp ? " · " + escapeHtml(s.whatsapp) : ""}
               · ${s.buckets ?? 0} baldes
               <span class="status-pill ${st}">${label}</span>
             </div>

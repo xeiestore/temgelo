@@ -45,14 +45,16 @@ temgelo/
 6. Seller logs in, updates stock/profile; if approved, catalog is republished automatically.
 
 ### Auth
-- Identity: normalized WhatsApp number
+- Identity: **username** (required) and optional **email** — not WhatsApp
+- Login: username **or** email + password
+- WhatsApp is only a **contact field** on the public map (optional)
 - Password: PBKDF2-SHA256 (100k iterations) in the Worker
-- Session: Bearer token in KV (30 days), stored in `localStorage` on the client
+- Session: Bearer session id in KV (30 days), stored in localStorage/sessionStorage
 
 ### Seller fields
 | Field | Notes |
 |--------|--------|
-| id, whatsapp, passwordHash/Salt | System |
+| id, username, email, passwordHash/Salt | System |
 | name, lat, lng, neighborhood, notes | Profile |
 | price, freeze, buckets, available | Stock |
 | status | `pending` \| `approved` \| `banned` |

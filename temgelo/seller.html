@@ -49,8 +49,8 @@
         <!-- Login -->
         <div id="form-login">
           <div class="form-group">
-            <label>WhatsApp</label>
-            <input type="tel" id="login-whatsapp" placeholder="2449xxxxxxxx" autocomplete="username" />
+            <label>Nome de utilizador ou email</label>
+            <input type="text" id="login-user" placeholder="utilizador ou email" autocomplete="username" />
           </div>
           <div class="form-group">
             <label>Palavra-passe</label>
@@ -76,11 +76,19 @@
             Só depois aparece no mapa público.
           </p>
           <div class="form-group">
-            <label>Nome / identificação</label>
+            <label>Nome / identificação (público no mapa)</label>
             <input type="text" id="reg-name" placeholder="Ex: João – Viana" />
           </div>
           <div class="form-group">
-            <label>WhatsApp (com código do país)</label>
+            <label>Nome de utilizador (para entrar)</label>
+            <input type="text" id="reg-username" placeholder="ex: joao_viana" autocomplete="username" />
+          </div>
+          <div class="form-group">
+            <label>Email (opcional)</label>
+            <input type="email" id="reg-email" placeholder="email@exemplo.com" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label>WhatsApp de contacto (mapa, opcional)</label>
             <input type="tel" id="reg-whatsapp" placeholder="2449xxxxxxxx" />
           </div>
           <div class="form-group">
@@ -177,6 +185,14 @@
         <div class="form-group">
           <label>Nome</label>
           <input type="text" id="dash-name" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="dash-email" placeholder="email@exemplo.com" />
+        </div>
+        <div class="form-group">
+          <label>WhatsApp de contacto (mapa)</label>
+          <input type="tel" id="dash-whatsapp" placeholder="2449xxxxxxxx" />
         </div>
         <div class="form-group">
           <label>Bairro / zona</label>

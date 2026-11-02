@@ -968,3 +968,13 @@ html, body {
   vertical-align: -3px;
   margin-right: 4px;
 }
+
+
+.drawer-section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 8px 14px 4px;
+}

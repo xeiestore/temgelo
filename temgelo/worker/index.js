@@ -17,7 +17,8 @@
  *
  * KV binding: SELLERS
  *   seller:{id}           → full account JSON
- *   wa:{normalizedPhone}  → seller id
+ *   user:{username}       → seller id
+ *   email:{email}         → seller id (if set)
  *   session:{token}       → { sellerId, exp }
  *   meta:texts            → site texts JSON (optional)
  *   meta:index            → JSON array of seller ids
@@ -44,16 +45,38 @@ function jsonError(msg, status) {
   return respond({ error: msg }, status);
 }
 
-/** Normalize Angolan WhatsApp: digits only, ensure starts with 244 */
+/** Normalize Angolan WhatsApp: digits only, ensure starts with 244 (contact only, not login) */
 function normalizeWhatsApp(raw) {
   let d = String(raw || "").replace(/\D/g, "");
+  if (!d) return "";
   if (d.startsWith("0") && d.length === 10) d = "244" + d.slice(1);
   if (d.length === 9) d = "244" + d;
   return d;
 }
 
 function isValidWhatsApp(d) {
+  if (!d) return true; // optional
   return /^2449\d{8}$/.test(d);
+}
+
+function normalizeUsername(raw) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+}
+
+function isValidUsername(u) {
+  return /^[a-z0-9_]{3,24}$/.test(u);
+}
+
+function normalizeEmail(raw) {
+  return String(raw || "").trim().toLowerCase();
+}
+
+function isValidEmail(e) {
+  if (!e) return true; // optional
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 }
 
 function randomId(prefix = "s") {
@@ -263,14 +286,22 @@ export default {
 
       if (request.method === "POST" && path.endsWith("/auth/register")) {
         const body = await request.json();
-        const whatsapp = normalizeWhatsApp(body.whatsapp);
+        const username = normalizeUsername(body.username);
+        const email = normalizeEmail(body.email);
         const password = String(body.password || "");
         const name = String(body.name || "").trim();
         const lat = parseFloat(body.lat);
         const lng = parseFloat(body.lng);
+        const whatsapp = normalizeWhatsApp(body.whatsapp);
 
-        if (!isValidWhatsApp(whatsapp)) {
-          return jsonError("WhatsApp inválido. Use o número com 2449…", 400);
+        if (!isValidUsername(username)) {
+          return jsonError(
+            "Nome de utilizador inválido (3–24 caracteres: letras, números ou _).",
+            400
+          );
+        }
+        if (!isValidEmail(email)) {
+          return jsonError("Email inválido.", 400);
         }
         if (password.length < 6) {
           return jsonError("Palavra-passe deve ter pelo menos 6 caracteres.", 400);
@@ -278,10 +309,15 @@ export default {
         if (!name || isNaN(lat) || isNaN(lng)) {
           return jsonError("Nome, latitude e longitude são obrigatórios.", 400);
         }
+        if (!isValidWhatsApp(whatsapp)) {
+          return jsonError("WhatsApp de contacto inválido. Use 2449… (opcional).", 400);
+        }
 
-        const existingId = await env.SELLERS.get("wa:" + whatsapp);
-        if (existingId) {
-          return jsonError("Já existe uma conta com este WhatsApp.", 409);
+        if (await env.SELLERS.get("user:" + username)) {
+          return jsonError("Este nome de utilizador já está em uso.", 409);
+        }
+        if (email && (await env.SELLERS.get("email:" + email))) {
+          return jsonError("Este email já está em uso.", 409);
         }
 
         const { hash, salt } = await hashPassword(password);
@@ -289,7 +325,9 @@ export default {
         const now = new Date().toISOString();
         const seller = {
           id,
-          whatsapp,
+          username,
+          email: email || "",
+          whatsapp: whatsapp || "",
           passwordHash: hash,
           passwordSalt: salt,
           name,
@@ -307,7 +345,8 @@ export default {
         };
 
         await saveSeller(env, seller);
-        await env.SELLERS.put("wa:" + whatsapp, id);
+        await env.SELLERS.put("user:" + username, id);
+        if (email) await env.SELLERS.put("email:" + email, id);
         const ids = await getIndex(env);
         if (!ids.includes(id)) {
           ids.push(id);
@@ -325,10 +364,18 @@ export default {
 
       if (request.method === "POST" && path.endsWith("/auth/login")) {
         const body = await request.json();
-        const whatsapp = normalizeWhatsApp(body.whatsapp);
+        const identifier = String(body.username || body.email || body.login || "")
+          .trim()
+          .toLowerCase();
         const password = String(body.password || "");
 
-        const sellerId = await env.SELLERS.get("wa:" + whatsapp);
+        if (!identifier || !password) {
+          return jsonError("Utilizador/email e palavra-passe são obrigatórios.", 400);
+        }
+
+        let sellerId =
+          (await env.SELLERS.get("user:" + identifier)) ||
+          (await env.SELLERS.get("email:" + identifier));
         if (!sellerId) return jsonError("Conta não encontrada.", 401);
         const seller = await loadSeller(env, sellerId);
         if (!seller) return jsonError("Conta não encontrada.", 401);
@@ -387,6 +434,26 @@ export default {
         if (body.buckets != null) s.buckets = Math.max(0, parseInt(body.buckets, 10) || 0);
         if (body.available != null) s.available = !!body.available;
         if (body.notes != null) s.notes = String(body.notes).trim();
+        if (body.whatsapp != null) {
+          const wa = normalizeWhatsApp(body.whatsapp);
+          if (!isValidWhatsApp(wa)) {
+            return jsonError("WhatsApp de contacto inválido.", 400);
+          }
+          s.whatsapp = wa;
+        }
+        if (body.email != null) {
+          const em = normalizeEmail(body.email);
+          if (!isValidEmail(em)) return jsonError("Email inválido.", 400);
+          if (em && em !== s.email) {
+            const taken = await env.SELLERS.get("email:" + em);
+            if (taken && taken !== s.id) {
+              return jsonError("Este email já está em uso.", 409);
+            }
+            if (s.email) await env.SELLERS.delete("email:" + s.email);
+            if (em) await env.SELLERS.put("email:" + em, s.id);
+            s.email = em;
+          }
+        }
 
         if (body.newPassword && String(body.newPassword).length >= 6) {
           const { hash, salt } = await hashPassword(String(body.newPassword));
@@ -451,7 +518,8 @@ export default {
         }
         if (action === "delete") {
           if (seller) {
-            await env.SELLERS.delete("wa:" + seller.whatsapp);
+            if (seller.username) await env.SELLERS.delete("user:" + seller.username);
+            if (seller.email) await env.SELLERS.delete("email:" + seller.email);
             await env.SELLERS.delete("seller:" + sellerId);
           }
           const ids = (await getIndex(env)).filter((x) => x !== sellerId);

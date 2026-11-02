@@ -44,10 +44,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (token) {
-    loadMe();
+    loadMe().then(() => {
+      if (location.hash === "#perfil") {
+        setTimeout(() => {
+          document.getElementById("dash-name")?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      }
+    });
   } else {
     showAuth();
     initRegMap();
+    if (location.hash === "#registar") {
+      switchTab("register");
+    }
   }
 });
 
@@ -196,16 +205,16 @@ async function api(path, options = {}) {
 
 // ---------- Login / register / logout ----------
 async function doLogin() {
-  const whatsapp = document.getElementById("login-whatsapp").value.trim();
+  const login = document.getElementById("login-user").value.trim();
   const password = document.getElementById("login-password").value;
-  if (!whatsapp || !password) {
-    alert("Preencha WhatsApp e palavra-passe.");
+  if (!login || !password) {
+    alert("Preencha utilizador/email e palavra-passe.");
     return;
   }
   try {
     const data = await api("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ whatsapp, password })
+      body: JSON.stringify({ username: login, password })
     });
     token = data.token;
     const stay = document.getElementById("login-stay")?.checked !== false;
@@ -220,6 +229,8 @@ async function doLogin() {
 async function doRegister() {
   const payload = {
     name: document.getElementById("reg-name").value.trim(),
+    username: document.getElementById("reg-username").value.trim(),
+    email: document.getElementById("reg-email").value.trim(),
     whatsapp: document.getElementById("reg-whatsapp").value.trim(),
     password: document.getElementById("reg-password").value,
     neighborhood: document.getElementById("reg-neighborhood").value.trim(),
@@ -230,8 +241,8 @@ async function doRegister() {
     freeze: document.getElementById("reg-freeze").value,
     available: document.getElementById("reg-available").checked
   };
-  if (!payload.name || !payload.whatsapp || !payload.password) {
-    alert("Nome, WhatsApp e palavra-passe são obrigatórios.");
+  if (!payload.name || !payload.username || !payload.password) {
+    alert("Nome, nome de utilizador e palavra-passe são obrigatórios.");
     return;
   }
   if (isNaN(payload.lat) || isNaN(payload.lng)) {
@@ -244,7 +255,7 @@ async function doRegister() {
       body: JSON.stringify(payload)
     });
     alert(data.message || "Conta criada. Aguarde aprovação.");
-    document.getElementById("login-whatsapp").value = payload.whatsapp;
+    document.getElementById("login-user").value = payload.username;
     switchTab("login");
   } catch (err) {
     alert(err.message || "Erro ao registar");
@@ -282,6 +293,8 @@ function fillDash() {
   document.getElementById("dash-price").value = me.price || "";
   document.getElementById("dash-available").checked = !!me.available;
   document.getElementById("dash-name").value = me.name || "";
+  document.getElementById("dash-email").value = me.email || "";
+  document.getElementById("dash-whatsapp").value = me.whatsapp || "";
   document.getElementById("dash-neighborhood").value = me.neighborhood || "";
   document.getElementById("dash-notes").value = me.notes || "";
   document.getElementById("dash-lat").value = me.lat ?? "";
@@ -315,6 +328,8 @@ async function saveMe(mode) {
     body.available = document.getElementById("dash-available").checked;
   } else {
     body.name = document.getElementById("dash-name").value.trim();
+    body.email = document.getElementById("dash-email").value.trim();
+    body.whatsapp = document.getElementById("dash-whatsapp").value.trim();
     body.neighborhood = document.getElementById("dash-neighborhood").value.trim();
     body.notes = document.getElementById("dash-notes").value.trim();
     body.lat = parseFloat(document.getElementById("dash-lat").value);
