@@ -623,25 +623,33 @@ export default {
         return respond({ ok: true, seller: safe });
       }
 
-      // Seller deletes own account
-      if (request.method === "DELETE" && path.endsWith("/seller/me")) {
+      // Seller deletes own account (DELETE or POST — POST works better with some proxies)
+      if (
+        (request.method === "DELETE" && path.endsWith("/seller/me")) ||
+        (request.method === "POST" && path.endsWith("/seller/delete"))
+      ) {
         const session = await getSession(env, request);
         if (!session) return respond("Unauthorized", 401);
         const seller = session.seller;
+        if (!seller || !seller.id) return jsonError("Conta não encontrada.", 404);
         const sellerId = seller.id;
-        if (seller.username) await env.SELLERS.delete("user:" + seller.username);
-        if (seller.email) await env.SELLERS.delete("email:" + seller.email);
-        await env.SELLERS.delete("seller:" + sellerId);
-        const ids = (await getIndex(env)).filter((x) => x !== sellerId);
-        await setIndex(env, ids);
-        // Invalidate this session
-        if (session.token) await env.SELLERS.delete("session:" + session.token);
         try {
-          await rebuildPublicCatalog(env);
+          if (seller.username) await env.SELLERS.delete("user:" + seller.username);
+          if (seller.email) await env.SELLERS.delete("email:" + seller.email);
+          await env.SELLERS.delete("seller:" + sellerId);
+          const ids = (await getIndex(env)).filter((x) => x !== sellerId);
+          await setIndex(env, ids);
+          if (session.token) await env.SELLERS.delete("session:" + session.token);
+          try {
+            await rebuildPublicCatalog(env);
+          } catch (e) {
+            console.error("catalog after self-delete failed", e);
+          }
+          return respond({ ok: true, status: "deleted" });
         } catch (e) {
-          console.error("catalog after self-delete failed", e);
+          console.error("self-delete failed", e);
+          return jsonError("Não foi possível eliminar a conta. Tente de novo.", 500);
         }
-        return respond({ ok: true, status: "deleted" });
       }
 
       if (request.method === "GET" && path.endsWith("/admin/sellers")) {

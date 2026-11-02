@@ -513,8 +513,9 @@ async function doRegister() {
 }
 
 async function deleteMyAccount() {
-  if (!me || !token) {
+  if (!token) {
     alert("Sessão expirada. Entre de novo.");
+    showAuth();
     return;
   }
   const ok = confirm(
@@ -522,26 +523,37 @@ async function deleteMyAccount() {
       "• Some do mapa público\n" +
       "• Perfil e stock são apagados\n" +
       "• Não pode ser desfeito\n\n" +
-      "Escreva OK na próxima pergunta para confirmar."
+      "Na próxima caixa escreva ELIMINAR para confirmar."
   );
   if (!ok) return;
-  const typed = prompt('Para confirmar, escreva ELIMINAR:');
+  const typed = prompt("Para confirmar, escreva ELIMINAR:");
   if (!typed || typed.trim().toUpperCase() !== "ELIMINAR") {
     alert("Conta não eliminada.");
     return;
   }
+  const btn = document.getElementById("btn-delete-account");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "A eliminar…";
+  }
   try {
-    await api("/seller/me", { method: "DELETE" });
+    // POST is supported on all Worker versions with standard CORS (GET/POST/PATCH)
+    await api("/seller/delete", { method: "POST", body: "{}" });
     token = null;
     me = null;
     clearToken();
     try {
       sessionStorage.removeItem("temgelo_seller_view");
+      localStorage.removeItem("temgelo_seller_profile");
     } catch (_) {}
     alert("Conta eliminada. Já não aparece no mapa.");
-    window.location.replace("./index.html");
+    window.location.replace("index.html");
   } catch (err) {
     alert(err.message || "Não foi possível eliminar a conta.");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Eliminar a minha conta";
+    }
   }
 }
 

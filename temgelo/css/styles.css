@@ -930,15 +930,18 @@ html.seller-view-profile #section-stock {
   min-height: 100dvh;
 }
 .seller-topbar {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  right: 0;
+  z-index: 1100;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: calc(10px + var(--safe-top)) 14px 10px;
   background: #0b1220;
   border-bottom: 1px solid #1e293b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 .seller-topbar .logo img {
   height: 36px;
@@ -954,10 +957,16 @@ html.seller-view-profile #section-stock {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Space for fixed topbar so hamburger stays on screen */
 .seller-main {
   max-width: 520px;
   margin: 0 auto;
-  padding: 16px 14px calc(24px + var(--safe-bottom));
+  padding: calc(64px + var(--safe-top)) 14px calc(24px + var(--safe-bottom));
+}
+.seller-body .hamburger-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 .seller-screen {
   animation: fadeIn 0.2s ease;
