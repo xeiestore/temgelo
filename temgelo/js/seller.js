@@ -2,6 +2,7 @@
 
 const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
 const TOKEN_KEY = "temgelo_seller_token";
+const PROFILE_KEY = "temgelo_seller_profile";
 
 function readToken() {
   return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
@@ -15,9 +16,28 @@ function writeToken(value, stay) {
     localStorage.removeItem(TOKEN_KEY);
   }
 }
+function saveSellerProfile(seller, stay) {
+  if (!seller) return;
+  const payload = JSON.stringify({
+    name: seller.name || "",
+    username: seller.username || ""
+  });
+  // Prefer same storage as token when possible
+  try {
+    if (stay === false) {
+      sessionStorage.setItem(PROFILE_KEY, payload);
+      localStorage.removeItem(PROFILE_KEY);
+    } else {
+      localStorage.setItem(PROFILE_KEY, payload);
+      sessionStorage.removeItem(PROFILE_KEY);
+    }
+  } catch (_) {}
+}
 function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(PROFILE_KEY);
+  sessionStorage.removeItem(PROFILE_KEY);
 }
 
 let token = readToken();
@@ -28,10 +48,26 @@ let dashMap = null;
 let dashMarker = null;
 
 // ---------- Boot ----------
+function setupInstallButtons() {
+  const handler = (e) => {
+    e.preventDefault();
+    if (window.temGeloInstall) window.temGeloInstall.promptInstall();
+  };
+  document.getElementById("btn-install-app")?.addEventListener("click", handler);
+  document.getElementById("btn-install-app-brand")?.addEventListener("click", handler);
+  // Hide install CTAs if already running as installed app
+  if (window.temGeloInstall && window.temGeloInstall.isStandalone()) {
+    document.querySelectorAll(".install-app-btn, .install-app-btn-brand, #install-app-hint").forEach((el) => {
+      el.classList.add("hidden");
+    });
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupDrawer();
   setupAuthTabs();
   setupPasswordToggles();
+  setupInstallButtons();
   document.getElementById("btn-login")?.addEventListener("click", doLogin);
   document.getElementById("btn-register")?.addEventListener("click", doRegister);
   document.getElementById("btn-save-stock")?.addEventListener("click", () => saveMe("stock"));
@@ -155,7 +191,26 @@ function renderDrawerNav() {
 }
 
 // ---------- Auth tabs ----------
+function setupUsernameInput() {
+  const el = document.getElementById("reg-username");
+  if (!el || el.dataset.boundUsername === "1") return;
+  el.dataset.boundUsername = "1";
+  el.addEventListener("input", () => {
+    const start = el.selectionStart;
+    // Disallow spaces while typing; keep only allowed chars
+    const cleaned = el.value.replace(/\s+/g, "").replace(/[^a-zA-Z0-9_]/g, "");
+    if (cleaned !== el.value) {
+      el.value = cleaned;
+      try {
+        el.setSelectionRange(start - 1, start - 1);
+      } catch (_) {}
+    }
+  });
+}
+
 function setupAuthTabs() {
+  setupUsernameInput();
+
   document.getElementById("tab-login")?.addEventListener("click", () => switchTab("login"));
   document.getElementById("tab-register")?.addEventListener("click", () => switchTab("register"));
 }
@@ -239,6 +294,7 @@ async function doLogin() {
     const stay = document.getElementById("login-stay")?.checked !== false;
     writeToken(token, stay);
     me = data.seller;
+    saveSellerProfile(me, stay);
     showDash();
   } catch (err) {
     alert(err.message || "Erro ao entrar");
@@ -271,18 +327,46 @@ async function doRegister() {
     alert("Nome, nome de utilizador e palavra-passe são obrigatórios.");
     return;
   }
+  const usernameNorm = payload.username.trim().toLowerCase().replace(/\s+/g, "");
+  if (!/^[a-z0-9_]{3,24}$/.test(usernameNorm)) {
+    alert(
+      "Nome de utilizador inválido.\n\nUse apenas letras, números ou _ (sem espaços).\nExemplo: joao_viana\n3 a 24 caracteres."
+    );
+    document.getElementById("reg-username")?.focus();
+    return;
+  }
+  if (/\s/.test(payload.username)) {
+    alert("O nome de utilizador não pode ter espaços. Use _ em vez de espaço (ex: joao_viana).");
+    document.getElementById("reg-username")?.focus();
+    return;
+  }
+  payload.username = usernameNorm;
   if (isNaN(payload.lat) || isNaN(payload.lng)) {
     alert("Defina a localização no mapa ou com GPS.");
     return;
   }
   try {
-    const data = await api("/auth/register", {
+    await api("/auth/register", {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    alert(data.message || "Conta criada. Aguarde aprovação.");
-    document.getElementById("login-user").value = payload.username;
-    switchTab("login");
+    // Enter the account immediately – ready to use (no approval wait)
+    const loginData = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: payload.username,
+        password: payload.password
+      })
+    });
+    token = loginData.token;
+    writeToken(token, true);
+    me = loginData.seller;
+    saveSellerProfile(me, true);
+    alert(
+      "Conta criada. Já está na área do vendedor.\n\n" +
+        "Actualize o stock para aparecer no mapa público."
+    );
+    showDash();
   } catch (err) {
     alert(err.message || "Erro ao registar");
   }
@@ -303,6 +387,7 @@ async function loadMe() {
   try {
     const data = await api("/seller/me");
     me = data.seller;
+    saveSellerProfile(me, !!localStorage.getItem(TOKEN_KEY));
     showDash();
   } catch {
     token = null;
@@ -341,18 +426,13 @@ function fillDash() {
   const banner = document.getElementById("status-banner");
   if (!banner) return;
   banner.className = "status-banner";
-  if (me.status === "pending") {
-    banner.classList.add("pending");
-    banner.textContent =
-      "Conta pendente de aprovação. Ainda não aparece no mapa público.";
-  } else if (me.status === "approved") {
-    banner.classList.add("approved");
-    banner.textContent = "Conta aprovada – visível no mapa (se tiver stock fresco).";
-  } else if (me.status === "banned") {
+  if (me.status === "banned") {
     banner.classList.add("banned");
     banner.textContent = "Conta bloqueada. Contacte o administrador.";
   } else {
-    banner.textContent = "";
+    banner.classList.add("approved");
+    banner.textContent =
+      "Conta activa – visível no mapa quando tiver gelo disponível (actualizado nas últimas 24h).";
   }
 }
 
@@ -386,6 +466,7 @@ async function saveMe(mode) {
       body: JSON.stringify(body)
     });
     me = data.seller;
+    saveSellerProfile(me, !!localStorage.getItem(TOKEN_KEY));
     fillDash();
     alert("Guardado com sucesso.");
   } catch (err) {

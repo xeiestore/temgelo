@@ -45,6 +45,9 @@
         <div class="auth-brand" aria-hidden="true">
           <img src="images/logo-dark.png" alt="" class="auth-brand-logo" />
           <p class="auth-brand-tagline">Encontre baldes de gelo perto de si</p>
+          <button type="button" class="btn btn-ghost install-app-btn-brand" id="btn-install-app-brand">
+            Instalar app no dispositivo
+          </button>
         </div>
 
         <div class="auth-panel">
@@ -76,13 +79,18 @@
             <span>Manter sessão iniciada</span>
           </label>
           <button class="btn btn-primary btn-block" type="button" id="btn-login">Entrar</button>
+          <button class="btn btn-ghost btn-block install-app-btn" type="button" id="btn-install-app">
+            Instalar app
+          </button>
+          <p class="text-sm text-muted text-center install-app-hint" id="install-app-hint" style="margin-top:8px">
+            Adicione Tem Gelo? ao ecrã principal para abrir mais depressa.
+          </p>
         </div>
 
         <!-- Register -->
         <div id="form-register" class="hidden">
           <p class="text-sm text-muted mb-2">
-            Após registar, a sua conta fica <strong>pendente</strong> até o administrador aprovar.
-            Só depois aparece no mapa público.
+            Após registar, pode usar a app de imediato. Actualize o stock para aparecer no mapa público.
           </p>
           <div class="form-group">
             <label>Nome / identificação (público no mapa)</label>
@@ -90,7 +98,10 @@
           </div>
           <div class="form-group">
             <label>Nome de utilizador (para entrar)</label>
-            <input type="text" id="reg-username" placeholder="ex: joao_viana" autocomplete="username" />
+            <input type="text" id="reg-username" placeholder="ex: joao_viana" autocomplete="username"
+              inputmode="text" autocapitalize="none" spellcheck="false"
+              pattern="[a-zA-Z0-9_]{3,24}" maxlength="24" />
+            <p class="text-sm text-muted mb-1">Só letras, números e _ · sem espaços · 3 a 24 caracteres</p>
           </div>
           <div class="form-group">
             <label>Email (opcional)</label>
@@ -261,6 +272,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/install.js"></script>
   <script src="js/seller.js"></script>
 </body>
 </html>

@@ -1237,3 +1237,13 @@ html, body {
   font-size: 0.8rem;
   color: var(--muted);
 }
+
+.install-app-btn {
+  margin-top: 10px;
+}
+.install-app-btn-brand {
+  margin-top: 8px;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+.text-center { text-align: center; }

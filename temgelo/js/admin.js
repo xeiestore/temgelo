@@ -43,7 +43,8 @@ const TEXT_FIELDS = [
   "menuStock",
   "menuProfile",
   "menuPanel",
-  "menuLogout"
+  "menuLogout",
+  "menuInstall"
 ];
 
 // ---------- Boot ----------
@@ -254,6 +255,12 @@ function openSellerModal(id = null) {
     document.getElementById("f-price").value = s.price || "";
     document.getElementById("f-freeze").value = s.freeze || "muito_congelado";
     document.getElementById("f-whatsapp").value = s.whatsapp || "";
+    document.getElementById("f-phone").value = s.phone || "";
+    const pay = s.payments || {};
+    document.getElementById("f-pay-numerario").checked = !!pay.numerario;
+    document.getElementById("f-pay-multicaixa").checked = !!pay.multicaixa;
+    document.getElementById("f-pay-unitel").checked = !!pay.unitel;
+    document.getElementById("f-pay-other").value = pay.other || "";
     document.getElementById("f-notes").value = s.notes || "";
     document.getElementById("f-available").checked = !!s.available;
   } else {
@@ -266,7 +273,12 @@ function openSellerModal(id = null) {
     document.getElementById("f-buckets").value = "5";
     document.getElementById("f-price").value = "1500";
     document.getElementById("f-freeze").value = "muito_congelado";
-    document.getElementById("f-whatsapp").value = "2449";
+    document.getElementById("f-whatsapp").value = "";
+    document.getElementById("f-phone").value = "";
+    document.getElementById("f-pay-numerario").checked = true;
+    document.getElementById("f-pay-multicaixa").checked = false;
+    document.getElementById("f-pay-unitel").checked = false;
+    document.getElementById("f-pay-other").value = "";
     document.getElementById("f-notes").value = "";
     document.getElementById("f-available").checked = true;
   }
@@ -299,6 +311,13 @@ function saveSeller() {
     price: document.getElementById("f-price").value.trim(),
     freeze: document.getElementById("f-freeze").value,
     whatsapp: document.getElementById("f-whatsapp").value.trim(),
+    phone: document.getElementById("f-phone").value.trim(),
+    payments: {
+      numerario: !!document.getElementById("f-pay-numerario").checked,
+      multicaixa: !!document.getElementById("f-pay-multicaixa").checked,
+      unitel: !!document.getElementById("f-pay-unitel").checked,
+      other: document.getElementById("f-pay-other").value.trim()
+    },
     notes: document.getElementById("f-notes").value.trim(),
     available: document.getElementById("f-available").checked,
     updatedAt: new Date().toISOString()

@@ -1,5 +1,5 @@
 // Tem Gelo? – Service Worker (basic offline shell)
-const CACHE_NAME = "temgelo-v12";
+const CACHE_NAME = "temgelo-v13";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const ASSETS = [
   "./js/app.js",
   "./js/admin.js",
   "./js/seller.js",
+  "./js/install.js",
   "./manifest.json",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

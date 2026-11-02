@@ -115,7 +115,8 @@ const DEFAULT_TEXTS = {
   menuStock: "Meu stock",
   menuProfile: "Perfil",
   menuPanel: "Painel",
-  menuLogout: "Sair"
+  menuLogout: "Sair",
+  menuInstall: "Instalar app"
 };
 
 // Helper: is still "fresh" (updated in last 24 hours)

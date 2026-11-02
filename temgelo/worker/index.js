@@ -3,7 +3,7 @@
  *
  * Routes:
  *   POST /publish          – admin: publish full catalog (legacy + after approve)
- *   POST /auth/register    – seller self-register (status: pending)
+ *   POST /auth/register    – seller self-register (status: approved, live immediately)
  *   POST /auth/login       – seller login → session token
  *   POST /auth/logout      – invalidate session
  *   GET  /seller/me        – current seller profile (Bearer token)
@@ -282,7 +282,8 @@ async function rebuildPublicCatalog(env) {
   const sellers = [];
   for (const id of ids) {
     const s = await loadSeller(env, id);
-    if (s && s.status === "approved") {
+    // Anyone not banned can appear on the map (no pending gate)
+    if (s && s.status !== "banned") {
       sellers.push(publicSeller(s));
     }
   }
@@ -431,7 +432,7 @@ export default {
           buckets: Math.max(0, parseInt(body.buckets, 10) || 0),
           available: !!body.available,
           notes: String(body.notes || "").trim(),
-          status: "pending",
+          status: "approved",
           createdAt: now,
           updatedAt: now
         };
@@ -444,13 +445,19 @@ export default {
           ids.push(id);
           await setIndex(env, ids);
         }
+        // Publish immediately so the seller can show on the map
+        try {
+          await rebuildPublicCatalog(env);
+        } catch (e) {
+          console.error("catalog after register failed", e);
+        }
 
         return respond({
           ok: true,
           id,
-          status: "pending",
+          status: "approved",
           message:
-            "Conta criada. Aguarde a aprovação do administrador para aparecer no mapa."
+            "Conta criada. Já pode actualizar o stock e aparecer no mapa."
         });
       }
 
@@ -566,7 +573,7 @@ export default {
         s.updatedAt = new Date().toISOString();
         await saveSeller(env, s);
 
-        if (s.status === "approved") {
+        if (s.status !== "banned") {
           try {
             await rebuildPublicCatalog(env);
           } catch (e) {

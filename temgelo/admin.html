@@ -245,6 +245,10 @@
             <label>Sair</label>
             <input type="text" id="t-menuLogout" />
           </div>
+          <div class="form-group">
+            <label>Instalar app</label>
+            <input type="text" id="t-menuInstall" />
+          </div>
 
           <button class="btn btn-primary" type="button" onclick="saveTexts()">Guardar textos</button>
         </div>
@@ -377,8 +381,22 @@
       </div>
 
       <div class="form-group">
-        <label>WhatsApp (com código do país)</label>
+        <label>WhatsApp (opcional — mapa)</label>
         <input type="text" id="f-whatsapp" placeholder="2449xxxxxxxx" />
+        <p class="text-sm text-muted mb-1">Pode deixar vazio.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Telefone para ligar (opcional)</label>
+        <input type="text" id="f-phone" placeholder="2449xxxxxxxx" />
+      </div>
+
+      <div class="form-group">
+        <label>Formas de pagamento (opcional)</label>
+        <label class="checkbox-row"><input type="checkbox" id="f-pay-numerario" checked /> <span>Numerário</span></label>
+        <label class="checkbox-row"><input type="checkbox" id="f-pay-multicaixa" /> <span>Multicaixa Express</span></label>
+        <label class="checkbox-row"><input type="checkbox" id="f-pay-unitel" /> <span>Unitel Money</span></label>
+        <input type="text" id="f-pay-other" placeholder="Outro (ex.: transferência)" style="margin-top:6px" />
       </div>
 
       <div class="form-group">
