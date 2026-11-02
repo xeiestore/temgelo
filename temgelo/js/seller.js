@@ -4,6 +4,179 @@ const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
 const TOKEN_KEY = "temgelo_seller_token";
 const PROFILE_KEY = "temgelo_seller_profile";
 
+// ---------- Polished toasts + dialogs (replace native alert/confirm/prompt) ----------
+const TG_ICONS = {
+  success:
+    '<svg class="tg-toast-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.4-3.9-3.9 1.4-1.4 2.5 2.5 5.1-5.1 1.4 1.4-6.5 6.5z"/></svg>',
+  error:
+    '<svg class="tg-toast-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
+  info:
+    '<svg class="tg-toast-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+  warn:
+    '<svg class="tg-toast-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>'
+};
+
+function showToast(message, type = "info", duration = 3800) {
+  const root = document.getElementById("tg-toast-root");
+  if (!root) {
+    window.alert(message);
+    return;
+  }
+  const el = document.createElement("div");
+  el.className = "tg-toast tg-toast-" + type;
+  el.innerHTML =
+    (TG_ICONS[type] || TG_ICONS.info) +
+    '<div class="tg-toast-msg"></div>' +
+    '<button type="button" class="tg-toast-close" aria-label="Fechar">×</button>';
+  el.querySelector(".tg-toast-msg").textContent = message;
+  const remove = () => {
+    el.classList.remove("tg-toast-in");
+    el.classList.add("tg-toast-out");
+    setTimeout(() => el.remove(), 200);
+  };
+  el.querySelector(".tg-toast-close").addEventListener("click", remove);
+  root.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("tg-toast-in"));
+  if (duration > 0) setTimeout(remove, duration);
+}
+
+function showAlert(message, opts = {}) {
+  return showDialog({
+    title: opts.title || (opts.type === "error" ? "Algo correu mal" : "Atenção"),
+    body: message,
+    type: opts.type || "info",
+    okLabel: opts.okLabel || "OK",
+    showCancel: false
+  });
+}
+
+function showConfirm(message, opts = {}) {
+  return showDialog({
+    title: opts.title || "Confirmar",
+    body: message,
+    type: opts.type || "warn",
+    okLabel: opts.okLabel || "Confirmar",
+    cancelLabel: opts.cancelLabel || "Cancelar",
+    okClass: opts.okClass || "",
+    showCancel: true
+  });
+}
+
+function showPrompt(message, opts = {}) {
+  return showDialog({
+    title: opts.title || "Confirmação",
+    body: message,
+    type: opts.type || "danger",
+    okLabel: opts.okLabel || "Confirmar",
+    cancelLabel: opts.cancelLabel || "Cancelar",
+    okClass: opts.okClass || "btn-danger",
+    showCancel: true,
+    input: true,
+    inputPlaceholder: opts.placeholder || "",
+    expect: opts.expect || null
+  });
+}
+
+function showDialog({
+  title,
+  body,
+  type = "info",
+  okLabel = "OK",
+  cancelLabel = "Cancelar",
+  okClass = "",
+  showCancel = true,
+  input = false,
+  inputPlaceholder = "",
+  expect = null
+} = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("tg-dialog-overlay");
+    const titleEl = document.getElementById("tg-dialog-title");
+    const bodyEl = document.getElementById("tg-dialog-body");
+    const iconEl = document.getElementById("tg-dialog-icon");
+    const inputWrap = document.getElementById("tg-dialog-input-wrap");
+    const inputEl = document.getElementById("tg-dialog-input");
+    const btnOk = document.getElementById("tg-dialog-ok");
+    const btnCancel = document.getElementById("tg-dialog-cancel");
+    if (!overlay || !btnOk) {
+      resolve(input ? null : false);
+      return;
+    }
+
+    titleEl.textContent = title || "";
+    bodyEl.textContent = body || "";
+    iconEl.className =
+      "tg-dialog-icon tg-icon-" +
+      (type === "error"
+        ? "error"
+        : type === "success"
+          ? "success"
+          : type === "danger"
+            ? "danger"
+            : type === "warn"
+              ? "warn"
+              : "info");
+    iconEl.textContent =
+      type === "success" ? "✓" : type === "error" || type === "danger" || type === "warn" ? "!" : "i";
+
+    if (input) {
+      inputWrap.classList.remove("hidden");
+      inputEl.value = "";
+      inputEl.placeholder = inputPlaceholder || "";
+    } else {
+      inputWrap.classList.add("hidden");
+    }
+
+    btnOk.textContent = okLabel;
+    btnOk.className = "btn " + (okClass || (type === "danger" ? "btn-danger" : "btn-primary"));
+    btnCancel.textContent = cancelLabel;
+    btnCancel.classList.toggle("hidden", !showCancel);
+
+    const cleanup = (value) => {
+      overlay.classList.add("hidden");
+      btnOk.onclick = null;
+      btnCancel.onclick = null;
+      overlay.onclick = null;
+      document.removeEventListener("keydown", onKey);
+      resolve(value);
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape") cleanup(input ? null : false);
+      if (e.key === "Enter" && !input) {
+        e.preventDefault();
+        btnOk.click();
+      }
+    };
+
+    btnOk.onclick = () => {
+      if (input) {
+        const val = (inputEl.value || "").trim();
+        if (expect && val.toUpperCase() !== String(expect).toUpperCase()) {
+          inputEl.focus();
+          inputEl.style.borderColor = "#f87171";
+          setTimeout(() => {
+            inputEl.style.borderColor = "";
+          }, 1200);
+          return;
+        }
+        cleanup(val);
+      } else {
+        cleanup(true);
+      }
+    };
+    btnCancel.onclick = () => cleanup(input ? null : false);
+    overlay.onclick = (e) => {
+      if (e.target === overlay) cleanup(input ? null : false);
+    };
+    document.addEventListener("keydown", onKey);
+
+    overlay.classList.remove("hidden");
+    if (input) setTimeout(() => inputEl.focus(), 50);
+    else setTimeout(() => btnOk.focus(), 50);
+  });
+}
+
 function readToken() {
   return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || null;
 }
@@ -434,7 +607,7 @@ async function doLogin() {
   const login = document.getElementById("login-user").value.trim();
   const password = document.getElementById("login-password").value;
   if (!login || !password) {
-    alert("Preencha utilizador/email e palavra-passe.");
+    showToast("Preencha utilizador/email e palavra-passe.", "warn");
     return;
   }
   const btn = document.getElementById("btn-login");
@@ -455,10 +628,10 @@ async function doLogin() {
     try {
       sessionStorage.removeItem("temgelo_seller_view");
     } catch (_) {}
-    // After login always land on the public map (hamburger → Meu stock / Perfil)
+    showToast("Sessão iniciada. A abrir o mapa…", "success", 2000);
     window.location.replace("./index.html");
   } catch (err) {
-    alert(err.message || "Erro ao entrar");
+    await showAlert(err.message || "Erro ao entrar", { type: "error", title: "Não foi possível entrar" });
     if (btn) {
       btn.disabled = false;
       btn.textContent = "Entrar";
@@ -491,25 +664,26 @@ async function doRegister() {
     available: document.getElementById("reg-available").checked
   };
   if (!payload.name || !payload.username || !payload.password) {
-    alert("Nome, nome de utilizador e palavra-passe são obrigatórios.");
+    showToast("Nome, nome de utilizador e palavra-passe são obrigatórios.", "warn");
     return;
   }
   const usernameNorm = payload.username.trim().toLowerCase().replace(/\s+/g, "");
   if (!/^[a-z0-9_]{3,24}$/.test(usernameNorm)) {
-    alert(
-      "Nome de utilizador inválido.\n\nUse apenas letras, números ou _ (sem espaços).\nExemplo: joao_viana\n3 a 24 caracteres."
+    await showAlert(
+      "Use apenas letras, números ou _ (sem espaços).\nExemplo: joao_viana\n3 a 24 caracteres.",
+      { title: "Nome de utilizador inválido", type: "warn" }
     );
     document.getElementById("reg-username")?.focus();
     return;
   }
   if (/\s/.test(payload.username)) {
-    alert("O nome de utilizador não pode ter espaços. Use _ em vez de espaço (ex: joao_viana).");
+    showToast("O nome de utilizador não pode ter espaços. Use _ (ex: joao_viana).", "warn");
     document.getElementById("reg-username")?.focus();
     return;
   }
   payload.username = usernameNorm;
   if (isNaN(payload.lat) || isNaN(payload.lng)) {
-    alert("Defina a localização no mapa ou com GPS.");
+    showToast("Defina a localização no mapa ou com GPS.", "warn");
     return;
   }
   try {
@@ -517,7 +691,6 @@ async function doRegister() {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    // Enter the account immediately – ready to use (no approval wait)
     const loginData = await api("/auth/login", {
       method: "POST",
       body: JSON.stringify({
@@ -529,8 +702,6 @@ async function doRegister() {
     writeToken(token, true);
     me = loginData.seller;
     saveSellerProfile(me, true);
-    // Profile + stock already saved at register — do not open seller dashboard / "Guardar perfil".
-    // Land on the public map; hamburger has Meu stock / Perfil when needed.
     try {
       sessionStorage.removeItem("temgelo_seller_view");
     } catch (_) {}
@@ -538,31 +709,45 @@ async function doRegister() {
       me && me.available && Number(me.buckets) > 0
         ? "Com gelo disponível, já pode aparecer no mapa."
         : "No menu (☰) use Meu stock para publicar gelo.";
-    alert("Conta criada com sucesso.\n\n" + onMap);
+    await showAlert("Conta criada com sucesso.\n\n" + onMap, {
+      title: "Bem-vindo ao Tem Gelo?",
+      type: "success",
+      okLabel: "Ver mapa"
+    });
     window.location.replace("./index.html");
     return;
   } catch (err) {
-    alert(err.message || "Erro ao registar");
+    await showAlert(err.message || "Erro ao registar", { type: "error", title: "Não foi possível registar" });
   }
 }
 
 async function deleteMyAccount() {
   if (!token) {
-    alert("Sessão expirada. Entre de novo.");
+    await showAlert("Sessão expirada. Entre de novo.", { type: "warn", title: "Sessão expirada" });
     showAuth();
     return;
   }
-  const ok = confirm(
-    "Eliminar a sua conta de forma permanente?\n\n" +
-      "• Some do mapa público\n" +
-      "• Perfil e stock são apagados\n" +
-      "• Não pode ser desfeito\n\n" +
-      "Na próxima caixa escreva ELIMINAR para confirmar."
+  const ok = await showConfirm(
+    "Esta acção é permanente:\n\n• Some do mapa público\n• Perfil e stock são apagados\n• Não pode ser desfeito",
+    {
+      title: "Eliminar conta?",
+      type: "danger",
+      okLabel: "Continuar",
+      okClass: "btn-danger",
+      cancelLabel: "Cancelar"
+    }
   );
   if (!ok) return;
-  const typed = prompt("Para confirmar, escreva ELIMINAR:");
-  if (!typed || typed.trim().toUpperCase() !== "ELIMINAR") {
-    alert("Conta não eliminada.");
+  const typed = await showPrompt("Para confirmar, escreva ELIMINAR:", {
+    title: "Confirmar eliminação",
+    type: "danger",
+    okLabel: "Eliminar conta",
+    okClass: "btn-danger",
+    placeholder: "ELIMINAR",
+    expect: "ELIMINAR"
+  });
+  if (!typed) {
+    showToast("Conta não eliminada.", "info");
     return;
   }
   const btn = document.getElementById("btn-delete-account");
@@ -571,7 +756,6 @@ async function deleteMyAccount() {
     btn.textContent = "A eliminar…";
   }
   try {
-    // Prefer POST /seller/delete; fall back to DELETE /seller/me
     try {
       await api("/seller/delete", { method: "POST", body: "{}" });
     } catch (e1) {
@@ -584,10 +768,17 @@ async function deleteMyAccount() {
       sessionStorage.removeItem("temgelo_seller_view");
       localStorage.removeItem("temgelo_seller_profile");
     } catch (_) {}
-    alert("Conta eliminada. Já não aparece no mapa.");
+    await showAlert("Conta eliminada. Já não aparece no mapa.", {
+      title: "Conta eliminada",
+      type: "success",
+      okLabel: "OK"
+    });
     window.location.replace("./index.html");
   } catch (err) {
-    alert(err.message || "Não foi possível eliminar a conta.");
+    await showAlert(err.message || "Não foi possível eliminar a conta.", {
+      type: "error",
+      title: "Erro ao eliminar"
+    });
     if (btn) {
       btn.disabled = false;
       btn.textContent = "Eliminar a minha conta";
@@ -693,7 +884,12 @@ function updateStockHints() {
 
 async function markSoldOut() {
   if (!me) return;
-  const ok = confirm("Marcar como esgotado?\n\nSome do mapa até voltar a activar stock.");
+  const ok = await showConfirm("Some do mapa até voltar a activar stock e quantidade.", {
+    title: "Marcar como esgotado?",
+    type: "warn",
+    okLabel: "Marcar esgotado",
+    cancelLabel: "Cancelar"
+  });
   if (!ok) return;
   document.getElementById("dash-available").checked = false;
   document.getElementById("dash-buckets").value = "0";
@@ -818,12 +1014,12 @@ async function saveMe(mode) {
     body.lat = parseFloat(document.getElementById("dash-lat").value);
     body.lng = parseFloat(document.getElementById("dash-lng").value);
     if (!body.name) {
-      alert("O nome é obrigatório.");
+      showToast("O nome é obrigatório.", "warn");
       document.getElementById("dash-name")?.focus();
       return;
     }
     if (isNaN(body.lat) || isNaN(body.lng)) {
-      alert("Defina a localização no mapa ou com GPS.");
+      showToast("Defina a localização no mapa ou com GPS.", "warn");
       return;
     }
   }
@@ -844,16 +1040,18 @@ async function saveMe(mode) {
       const qty = Number(me.buckets) || 0;
       const pkgs = Array.isArray(me.packages) ? me.packages.length : 0;
       const onMap = !!me.available && (qty > 0 || pkgs > 0);
-      alert(
+      showToast(
         onMap
-          ? "Stock guardado. Já pode aparecer no mapa (actualiza em até ~30 s)."
-          : "Stock guardado. Ainda não aparece no mapa — active «Tenho gelo disponível» e quantidade > 0."
+          ? "Stock guardado. Já pode aparecer no mapa (até ~30 s)."
+          : "Stock guardado. Ainda não no mapa — active gelo disponível e quantidade > 0.",
+        onMap ? "success" : "info",
+        4200
       );
     } else {
-      alert("Perfil guardado com sucesso.");
+      showToast("Perfil guardado com sucesso.", "success");
     }
   } catch (err) {
-    alert(err.message || "Erro ao guardar");
+    await showAlert(err.message || "Erro ao guardar", { type: "error", title: "Não foi possível guardar" });
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
@@ -926,7 +1124,7 @@ function setDashPos(lat, lng) {
 
 function useGps(target) {
   if (!navigator.geolocation) {
-    alert("GPS não disponível neste dispositivo.");
+    showToast("GPS não disponível neste dispositivo.", "warn");
     return;
   }
   navigator.geolocation.getCurrentPosition(
@@ -940,7 +1138,7 @@ function useGps(target) {
         setDashPos(latitude, longitude);
       }
     },
-    () => alert("Não foi possível obter a localização."),
+    () => showToast("Não foi possível obter a localização.", "error"),
     { enableHighAccuracy: true, timeout: 15000 }
   );
 }

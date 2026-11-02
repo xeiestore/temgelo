@@ -338,6 +338,25 @@
     </section>
   </main>
 
+  <!-- Toast stack (success / info / error) -->
+  <div id="tg-toast-root" class="tg-toast-root" aria-live="polite" aria-relevant="additions"></div>
+
+  <!-- Confirm / alert / prompt modal -->
+  <div id="tg-dialog-overlay" class="tg-dialog-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tg-dialog-title">
+    <div class="tg-dialog" id="tg-dialog">
+      <div class="tg-dialog-icon" id="tg-dialog-icon" aria-hidden="true"></div>
+      <h3 class="tg-dialog-title" id="tg-dialog-title">Confirmar</h3>
+      <p class="tg-dialog-body" id="tg-dialog-body"></p>
+      <div class="tg-dialog-input-wrap hidden" id="tg-dialog-input-wrap">
+        <input type="text" id="tg-dialog-input" class="tg-dialog-input" autocomplete="off" />
+      </div>
+      <div class="tg-dialog-actions">
+        <button type="button" class="btn btn-ghost" id="tg-dialog-cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="tg-dialog-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/install.js"></script>

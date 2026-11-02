@@ -283,21 +283,43 @@ function renderMarkers() {
 
 function packagesPopupHtml(seller) {
   const pkgs = typeof normalizePackages === "function" ? normalizePackages(seller.packages) : [];
+  const unitLabel = stockUnitLabel(seller.unit, texts) || "Baldes";
+  const hasSimple = seller.price != null && String(seller.price).trim() !== "";
+  let html = "";
+
+  // Preço simples (baldes / unidade principal) — always show when set
+  if (hasSimple) {
+    html += `<div class="popup-row">
+      <span class="popup-label">${escapeHtml(texts.labelPrice || DEFAULT_TEXTS.labelPrice)} (${escapeHtml(String(unitLabel).toLowerCase())})</span>
+      <span class="popup-value">${escapeHtml(String(seller.price))} Kz</span>
+    </div>`;
+  }
+
+  // Tabela de tamanhos (kg etc.) — can appear together with simple price
   if (pkgs.length) {
     const lines = pkgs
       .map(
         (p) =>
-          `<div class="popup-row"><span>${escapeHtml(
+          `<div class="popup-row popup-row-sub"><span>${escapeHtml(
             formatPackageLine(p)
           )}</span></div>`
       )
       .join("");
-    return `<div class="popup-packages"><div class="popup-row"><span><strong>Preços</strong></span></div>${lines}</div>`;
-  }
-  return `<div class="popup-row">
-      <span>${escapeHtml(texts.labelPrice || DEFAULT_TEXTS.labelPrice)}</span>
-      <span>${seller.price ? escapeHtml(String(seller.price)) + " Kz" : "—"}</span>
+    html += `<div class="popup-packages">
+      <div class="popup-section-label">${escapeHtml(
+        hasSimple ? "Outros tamanhos" : texts.labelPrice || DEFAULT_TEXTS.labelPrice || "Preços"
+      )}</div>
+      ${lines}
     </div>`;
+  }
+
+  if (!html) {
+    html = `<div class="popup-row">
+      <span class="popup-label">${escapeHtml(texts.labelPrice || DEFAULT_TEXTS.labelPrice)}</span>
+      <span class="popup-value">—</span>
+    </div>`;
+  }
+  return html;
 }
 
 function createPopup(seller, available) {
@@ -340,22 +362,25 @@ function createPopup(seller, available) {
     )}</p>`;
   }
 
+  const unitLabel = stockUnitLabel(seller.unit, texts) || "Baldes";
+  const qty = seller.buckets != null && seller.buckets !== "" ? seller.buckets : "—";
+
   return `
     <div class="popup-title">${escapeHtml(seller.name)}</div>
     ${statusHtml}
     <div class="popup-meta">${escapeHtml(seller.neighborhood || "")}</div>
     <div class="popup-row">
-      <span>${escapeHtml(stockUnitLabel(seller.unit, texts))}</span>
-      <span>${seller.buckets ?? "—"}</span>
+      <span class="popup-label">${escapeHtml(unitLabel)}</span>
+      <span class="popup-value">${escapeHtml(String(qty))}</span>
     </div>
     <div class="popup-row">
-      <span>${escapeHtml(texts.labelFreeze || DEFAULT_TEXTS.labelFreeze)}</span>
-      <span>${escapeHtml(freeze)}</span>
+      <span class="popup-label">${escapeHtml(texts.labelFreeze || DEFAULT_TEXTS.labelFreeze)}</span>
+      <span class="popup-value">${escapeHtml(freeze)}</span>
     </div>
     ${packagesPopupHtml(seller)}
     <div class="popup-row">
-      <span>${escapeHtml(texts.labelUpdated || DEFAULT_TEXTS.labelUpdated)}</span>
-      <span>${updated}</span>
+      <span class="popup-label">${escapeHtml(texts.labelUpdated || DEFAULT_TEXTS.labelUpdated)}</span>
+      <span class="popup-value">${updated}</span>
     </div>
     ${paymentsHtml(seller.payments)}
     ${seller.notes ? `<div class="text-sm text-muted mt-2">${escapeHtml(seller.notes)}</div>` : ""}

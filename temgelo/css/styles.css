@@ -324,12 +324,45 @@ html.seller-view-profile #section-stock {
 .popup-row {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
   font-size: 0.9rem;
-  margin: 4px 0;
+  margin: 6px 0;
 }
 
-.popup-row span:last-child {
+.popup-row .popup-label,
+.popup-row > span:first-child {
+  color: var(--muted, #94a3b8);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.popup-row .popup-value,
+.popup-row > span:last-child {
   font-weight: 600;
+  color: #e2e8f0;
+  text-align: right;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.popup-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 10px 0 4px;
+}
+
+.popup-packages .popup-row-sub {
+  margin: 3px 0;
+  font-size: 0.85rem;
+}
+.popup-packages .popup-row-sub span {
+  font-weight: 500;
+  color: #e2e8f0;
 }
 
 .popup-status {
@@ -1632,4 +1665,187 @@ html.seller-view-profile #section-stock {
 .seller-map-btn:hover {
   background: #1e293b !important;
   color: #fff !important;
+}
+
+/* ========== Seller toasts + dialogs ========== */
+.tg-toast-root {
+  position: fixed;
+  top: calc(12px + var(--safe-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, calc(100vw - 24px));
+  pointer-events: none;
+}
+.tg-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tg-toast.tg-toast-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tg-toast.tg-toast-out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.tg-toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+.tg-toast-msg {
+  flex: 1;
+  white-space: pre-line;
+}
+.tg-toast-close {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.tg-toast-close:hover { color: #f1f5f9; }
+.tg-toast-success {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: linear-gradient(180deg, #0f1f17 0%, #0f172a 100%);
+}
+.tg-toast-success .tg-toast-icon { color: #4ade80; }
+.tg-toast-error {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: linear-gradient(180deg, #1f1212 0%, #0f172a 100%);
+}
+.tg-toast-error .tg-toast-icon { color: #f87171; }
+.tg-toast-info {
+  border-color: rgba(96, 165, 250, 0.4);
+  background: linear-gradient(180deg, #0f1724 0%, #0f172a 100%);
+}
+.tg-toast-info .tg-toast-icon { color: #60a5fa; }
+
+.tg-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
+}
+.tg-dialog-overlay.hidden { display: none !important; }
+.tg-dialog {
+  width: 100%;
+  max-width: 400px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 16px 16px 0 0;
+  padding: 22px 20px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: tgDialogIn 0.2s ease;
+}
+@media (min-width: 640px) {
+  .tg-dialog-overlay { align-items: center; }
+  .tg-dialog { border-radius: 16px; }
+}
+@keyframes tgDialogIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.tg-dialog-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 1.25rem;
+}
+.tg-dialog-icon.tg-icon-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+.tg-dialog-icon.tg-icon-error {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+.tg-dialog-icon.tg-icon-warn {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+.tg-dialog-icon.tg-icon-info {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+.tg-dialog-icon.tg-icon-danger {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+.tg-dialog-icon:empty { display: none; }
+.tg-dialog-title {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  text-align: center;
+}
+.tg-dialog-body {
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #94a3b8;
+  text-align: center;
+  white-space: pre-line;
+}
+.tg-dialog-input-wrap {
+  margin: 0 0 16px;
+}
+.tg-dialog-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: #f1f5f9;
+  font-size: 0.95rem;
+}
+.tg-dialog-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+.tg-dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+.tg-dialog-actions .btn {
+  flex: 1;
+}
+.tg-dialog-actions .btn-danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+.tg-dialog-actions .btn-danger:hover {
+  background: #b91c1c;
 }
