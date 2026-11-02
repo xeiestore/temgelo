@@ -67,6 +67,29 @@
     <button type="button" aria-label="Fechar" onclick="document.getElementById('safety-banner').classList.add('hidden')">×</button>
   </div>
 
+  <!-- Report modal (sends to admin panel, not WhatsApp) -->
+  <div id="report-modal" class="report-modal hidden" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+    <div class="report-modal-card">
+      <div class="report-modal-head">
+        <h3 id="report-modal-title">Reportar um problema</h3>
+        <button type="button" class="report-modal-close" onclick="closeReportModal()" aria-label="Fechar">×</button>
+      </div>
+      <p class="text-sm text-muted mb-2">A mensagem vai para a equipa Tem Gelo? (não para WhatsApp).</p>
+      <div class="form-group">
+        <label for="report-message">Mensagem</label>
+        <textarea id="report-message" rows="4" placeholder="Descreva o problema…"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="report-contact">O seu contacto (opcional)</label>
+        <input type="text" id="report-contact" placeholder="WhatsApp ou telefone" />
+      </div>
+      <div class="report-modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeReportModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="report-submit" onclick="submitReport()">Enviar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="js/sellers.js"></script>
@@ -118,6 +141,7 @@
       const iconMap = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>';
       const iconSafety = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
       const iconLogout = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>';
+      const iconReport = '<svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9l-6-6zM5 19V5h9v5h5v9H5zm2-4h10v2H7v-2zm0-4h7v2H7v-2z"/></svg>';
 
       function isSellerLoggedIn() {
         return !!(localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY));
@@ -126,6 +150,8 @@
       function renderNav() {
         if (!nav) return;
         const loggedIn = isSellerLoggedIn();
+        const reportLink =
+          '<a href="#" class="drawer-link" id="link-report">' + iconReport + ' Reportar um problema</a>';
         if (loggedIn) {
           nav.innerHTML =
             '<div class="drawer-section-label">Área do vendedor</div>' +
@@ -133,18 +159,25 @@
             '<a href="seller.html#perfil" class="drawer-link">' + iconUser + ' Perfil</a>' +
             '<a href="seller.html" class="drawer-link">' + iconMap + ' Painel</a>' +
             '<a href="#" class="drawer-link drawer-link-danger" id="public-seller-logout">' + iconLogout + ' Sair</a>' +
-            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' Segurança</a>';
+            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' Segurança</a>' +
+            reportLink;
         } else {
           nav.innerHTML =
             '<a href="seller.html" class="drawer-link">' + iconLogin + ' Entrar</a>' +
             '<a href="seller.html#registar" class="drawer-link">' + iconUser + ' Criar conta</a>' +
-            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' Segurança</a>';
+            '<a href="#safety-banner" class="drawer-link" id="link-safety">' + iconSafety + ' Segurança</a>' +
+            reportLink;
         }
 
         document.getElementById("link-safety")?.addEventListener("click", (e) => {
           e.preventDefault();
           close();
           document.getElementById("safety-banner")?.classList.remove("hidden");
+        });
+        document.getElementById("link-report")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          close();
+          if (typeof openReportModal === "function") openReportModal("");
         });
         document.getElementById("public-seller-logout")?.addEventListener("click", (e) => {
           e.preventDefault();

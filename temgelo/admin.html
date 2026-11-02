@@ -58,6 +58,14 @@
           <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
           <span class="sidebar-label">Textos</span>
         </button>
+        <button type="button" class="sidebar-link" data-section="images" onclick="showSection('images')">
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>
+          <span class="sidebar-label">Imagens</span>
+        </button>
+        <button type="button" class="sidebar-link" data-section="reports" onclick="showSection('reports'); loadReports()">
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M15 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9l-6-6zM5 19V5h9v5h5v9H5z"/></svg></span>
+          <span class="sidebar-label">Relatórios</span>
+        </button>
         <button type="button" class="sidebar-link" data-section="catalog" onclick="showSection('catalog')">
           <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
           <span class="sidebar-label">Catálogo</span>
@@ -157,6 +165,14 @@
             <input type="text" id="t-btnWhatsApp" />
           </div>
           <div class="form-group">
+            <label>Botão Ligar (telefone)</label>
+            <input type="text" id="t-btnCall" />
+          </div>
+          <div class="form-group">
+            <label>Sem contacto (só localização)</label>
+            <input type="text" id="t-noContact" />
+          </div>
+          <div class="form-group">
             <label>Botão Reportar</label>
             <input type="text" id="t-btnReport" />
           </div>
@@ -207,6 +223,51 @@
             Pendentes não são públicos.
           </p>
           <div id="accounts-list" class="seller-list"></div>
+        </div>
+      </section>
+
+
+      <section id="section-images" class="admin-section hidden">
+        <div class="card">
+          <h3>Imagens do site</h3>
+          <p class="text-sm text-muted mb-2">
+            Cole URLs de imagens (ex.: Cloudinary). Depois clique em <strong>Guardar imagens</strong>.
+            Ficam no KV e sobrevivem a redeploys.
+          </p>
+          <div class="form-group">
+            <label>Logo do cabeçalho (mapa)</label>
+            <input type="url" id="img-logoHeader" placeholder="https://…/logo-header.png" />
+          </div>
+          <div class="form-group">
+            <label>Logo do menu (drawer)</label>
+            <input type="url" id="img-logoDrawer" placeholder="https://…/logo.png" />
+          </div>
+          <div class="form-group">
+            <label>Logo grande (página Entrar – painel esquerdo)</label>
+            <input type="url" id="img-logoBrand" placeholder="https://…/logo-dark.png" />
+          </div>
+          <div class="form-row" style="gap:12px;align-items:flex-start">
+            <div>
+              <p class="text-sm text-muted">Pré-visualização cabeçalho</p>
+              <img id="img-preview-header" alt="" style="max-height:48px;max-width:180px;background:#0b1220;border-radius:8px" />
+            </div>
+            <div>
+              <p class="text-sm text-muted">Pré-visualização marca</p>
+              <img id="img-preview-brand" alt="" style="max-height:120px;max-width:180px;background:#0b1220;border-radius:8px" />
+            </div>
+          </div>
+          <button class="btn btn-primary mt-2" type="button" onclick="saveImages()">Guardar imagens</button>
+        </div>
+      </section>
+
+      <section id="section-reports" class="admin-section hidden">
+        <div class="card">
+          <h3>
+            Relatórios de utilizadores
+            <button class="btn btn-ghost" type="button" style="padding:6px 12px;font-size:0.85rem" onclick="loadReports()">Actualizar</button>
+          </h3>
+          <p class="text-sm text-muted mb-2">Mensagens enviadas pelo mapa ou menu (não passam por WhatsApp).</p>
+          <div id="reports-list" class="seller-list"></div>
         </div>
       </section>
 

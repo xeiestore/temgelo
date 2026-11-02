@@ -97,9 +97,24 @@
             <input type="email" id="reg-email" placeholder="email@exemplo.com" autocomplete="email" />
           </div>
           <div class="form-group">
-            <label>WhatsApp de contacto (mapa, opcional)</label>
+            <label>WhatsApp (opcional — aparece no mapa)</label>
             <input type="tel" id="reg-whatsapp" placeholder="2449xxxxxxxx" />
+            <p class="text-sm text-muted mb-1">Pode deixar vazio se preferir não ser contactado por WhatsApp.</p>
           </div>
+          <div class="form-group">
+            <label>Telefone para ligar (opcional)</label>
+            <input type="tel" id="reg-phone" placeholder="2449xxxxxxxx" />
+            <p class="text-sm text-muted mb-1">Só localização também é válido — contacto não é obrigatório.</p>
+          </div>
+
+          <div class="form-group">
+            <label>Formas de pagamento (opcional)</label>
+            <label class="checkbox-row"><input type="checkbox" id="reg-pay-numerario" checked /> <span>Numerário</span></label>
+            <label class="checkbox-row"><input type="checkbox" id="reg-pay-multicaixa" /> <span>Multicaixa Express</span></label>
+            <label class="checkbox-row"><input type="checkbox" id="reg-pay-unitel" /> <span>Unitel Money</span></label>
+            <input type="text" id="reg-pay-other" placeholder="Outro (ex.: transferência)" style="margin-top:6px" />
+          </div>
+
           <div class="form-group">
             <label>Palavra-passe (mín. 6 caracteres)</label>
             <div class="password-field">
@@ -202,8 +217,19 @@
           <input type="email" id="dash-email" placeholder="email@exemplo.com" />
         </div>
         <div class="form-group">
-          <label>WhatsApp de contacto (mapa)</label>
+          <label>WhatsApp (opcional — mapa)</label>
           <input type="tel" id="dash-whatsapp" placeholder="2449xxxxxxxx" />
+          <p class="text-sm text-muted mb-1">Deixe vazio se não quiser WhatsApp no mapa.</p>
+          <label class="mt-2">Telefone para ligar (opcional)</label>
+          <input type="tel" id="dash-phone" placeholder="2449xxxxxxxx" />
+          <p class="text-sm text-muted mb-1">Pode mostrar só a localização, sem telefone nem WhatsApp.</p>
+
+          <label class="mt-2">Formas de pagamento</label>
+          <label class="checkbox-row"><input type="checkbox" id="dash-pay-numerario" /> <span>Numerário</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="dash-pay-multicaixa" /> <span>Multicaixa Express</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="dash-pay-unitel" /> <span>Unitel Money</span></label>
+          <input type="text" id="dash-pay-other" placeholder="Outro (ex.: transferência)" style="margin-top:6px" />
+
         </div>
         <div class="form-group">
           <label>Bairro / zona</label>

@@ -1,16 +1,19 @@
 // Tem Gelo? – public map logic
 
-const CATALOG_URL =
-  "https://tem-gelo-publish.xeieloja.workers.dev/catalog";
+const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
+const CATALOG_URL = API_BASE + "/catalog";
 const CATALOG_FALLBACK =
   "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
 const POLL_MS = 30000; // refresh map every 30s
 
 let sellers = [...DEFAULT_SELLERS];
 let texts = { ...DEFAULT_TEXTS };
+let siteImages = {};
 let map;
 let markersLayer;
 let lastCatalogAt = null;
+let pendingReportSellerId = "";
+let pendingReportSellerName = "";
 
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
@@ -76,9 +79,13 @@ async function loadCatalog() {
     if (data.texts && typeof data.texts === "object") {
       texts = { ...DEFAULT_TEXTS, ...data.texts };
     }
+    if (data.images && typeof data.images === "object") {
+      siteImages = data.images;
+    }
   }
 
   applyTexts();
+  applyImages();
   renderMarkers();
   updateCount();
   // Only fit bounds on first successful load
@@ -116,6 +123,34 @@ function applyTexts() {
   const safetyBody = document.getElementById("safety-body");
   if (safetyTitle) safetyTitle.textContent = texts.safetyTitle || DEFAULT_TEXTS.safetyTitle;
   if (safetyBody) safetyBody.textContent = texts.safetyBody || DEFAULT_TEXTS.safetyBody;
+}
+
+function applyImages() {
+  const header = siteImages.logoHeader || siteImages.logo;
+  const drawer = siteImages.logoDrawer || header;
+  if (header) {
+    document.querySelectorAll("#home-logo img, .topbar .logo img").forEach((img) => {
+      img.src = header;
+    });
+  }
+  if (drawer) {
+    document.querySelectorAll("#public-drawer .drawer-header img").forEach((img) => {
+      img.src = drawer;
+    });
+  }
+}
+
+function paymentsHtml(payments) {
+  const p = payments || {};
+  const tags = [];
+  if (p.numerario) tags.push("Numerário");
+  if (p.multicaixa) tags.push("Multicaixa Express");
+  if (p.unitel) tags.push("Unitel Money");
+  if (p.other) tags.push(String(p.other));
+  if (!tags.length) return "";
+  return `<div class="popup-payments">${tags
+    .map((t) => `<span class="pay-tag">${escapeHtml(t)}</span>`)
+    .join("")}</div>`;
 }
 
 function freezeLabel(key) {
@@ -167,8 +202,29 @@ function createPopup(seller, available) {
     : `<span class="popup-status no">${escapeHtml(texts.statusNo || DEFAULT_TEXTS.statusNo)}</span>`;
 
   const waNumber = (seller.whatsapp || "").replace(/\D/g, "");
+  const phoneNumber = (seller.phone || "").replace(/\D/g, "");
   const waMsg = encodeURIComponent(texts.waMessage || DEFAULT_TEXTS.waMessage);
-  const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waMsg}` : "#";
+  const waLink = waNumber ? `https://wa.me/${waNumber}?text=${waMsg}` : "";
+  const telLink = phoneNumber ? `tel:+${phoneNumber}` : "";
+
+  let contactHtml = "";
+  if (waNumber) {
+    contactHtml += `<a class="btn-wa" href="${waLink}" target="_blank" rel="noopener">${escapeHtml(
+      texts.btnWhatsApp || DEFAULT_TEXTS.btnWhatsApp
+    )}</a>`;
+  }
+  if (phoneNumber) {
+    contactHtml += `<a class="btn-call" href="${telLink}">${escapeHtml(
+      texts.btnCall || DEFAULT_TEXTS.btnCall || "Ligar"
+    )}</a>`;
+  }
+  if (!waNumber && !phoneNumber) {
+    contactHtml += `<p class="popup-no-contact">${escapeHtml(
+      texts.noContact ||
+        DEFAULT_TEXTS.noContact ||
+        "Sem contacto público — só localização no mapa"
+    )}</p>`;
+  }
 
   return `
     <div class="popup-title">${escapeHtml(seller.name)}</div>
@@ -190,15 +246,10 @@ function createPopup(seller, available) {
       <span>${escapeHtml(texts.labelUpdated || DEFAULT_TEXTS.labelUpdated)}</span>
       <span>${updated}</span>
     </div>
+    ${paymentsHtml(seller.payments)}
     ${seller.notes ? `<div class="text-sm text-muted mt-2">${escapeHtml(seller.notes)}</div>` : ""}
-    ${
-      waNumber
-        ? `<a class="btn-wa" href="${waLink}" target="_blank" rel="noopener">${escapeHtml(
-            texts.btnWhatsApp || DEFAULT_TEXTS.btnWhatsApp
-          )}</a>`
-        : ""
-    }
-    <button class="btn-report" type="button" onclick="reportSeller('${seller.id}')">${escapeHtml(
+    ${contactHtml}
+    <button class="btn-report" type="button" onclick="openReportModal('${seller.id}')">${escapeHtml(
       texts.btnReport || DEFAULT_TEXTS.btnReport
     )}</button>
   `;
@@ -216,16 +267,72 @@ function updateCount() {
   }
 }
 
-// ---------- Report ----------
+// ---------- Report (to admin panel, not WhatsApp) ----------
+function openReportModal(sellerId) {
+  pendingReportSellerId = sellerId || "";
+  const seller = sellers.find((s) => s.id === sellerId);
+  pendingReportSellerName = seller ? seller.name : "";
+  const modal = document.getElementById("report-modal");
+  const title = document.getElementById("report-modal-title");
+  const msg = document.getElementById("report-message");
+  const contact = document.getElementById("report-contact");
+  if (title) {
+    title.textContent = seller
+      ? "Reportar vendedor"
+      : "Reportar um problema";
+  }
+  if (msg) {
+    msg.value = seller
+      ? `Quero reportar o vendedor "${seller.name}" (ID: ${seller.id}). Motivo: `
+      : "";
+  }
+  if (contact) contact.value = "";
+  modal?.classList.remove("hidden");
+  msg?.focus();
+}
+
+function closeReportModal() {
+  document.getElementById("report-modal")?.classList.add("hidden");
+  pendingReportSellerId = "";
+  pendingReportSellerName = "";
+}
+
+async function submitReport() {
+  const message = document.getElementById("report-message")?.value.trim() || "";
+  const contact = document.getElementById("report-contact")?.value.trim() || "";
+  if (message.length < 5) {
+    alert("Escreva uma mensagem com pelo menos 5 caracteres.");
+    return;
+  }
+  const btn = document.getElementById("report-submit");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(API_BASE + "/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sellerId: pendingReportSellerId,
+        sellerName: pendingReportSellerName,
+        message,
+        contact
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || res.statusText);
+    }
+    closeReportModal();
+    alert("Obrigado. O relatório foi enviado à equipa Tem Gelo?.");
+  } catch (err) {
+    alert("Não foi possível enviar: " + (err.message || err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// Keep old name for any leftover onclick
 function reportSeller(id) {
-  const seller = sellers.find((s) => s.id === id);
-  const name = seller ? seller.name : id;
-  const template = texts.reportMessage || DEFAULT_TEXTS.reportMessage;
-  const msg = encodeURIComponent(
-    template.replace("{name}", name).replace("{id}", id)
-  );
-  const adminWa = (texts.adminWhatsApp || DEFAULT_TEXTS.adminWhatsApp).replace(/\D/g, "");
-  window.location.href = `https://wa.me/${adminWa}?text=${msg}`;
+  openReportModal(id);
 }
 
 // ---------- Helpers ----------

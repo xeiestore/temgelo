@@ -178,6 +178,20 @@ function showAuth() {
   document.getElementById("screen-dash")?.classList.add("hidden");
   document.getElementById("topbar-title").textContent = "Vendedor";
   renderDrawerNav();
+  applyBrandImage();
+}
+
+async function applyBrandImage() {
+  try {
+    const res = await fetch(API_BASE + "/catalog?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const url = data.images && (data.images.logoBrand || data.images.logoHeader);
+    if (!url) return;
+    document.querySelectorAll(".auth-brand-logo, .seller-topbar .logo img, .drawer-header img").forEach((img) => {
+      img.src = url;
+    });
+  } catch (_) {}
 }
 
 function showDash() {
@@ -237,6 +251,13 @@ async function doRegister() {
     username: document.getElementById("reg-username").value.trim(),
     email: document.getElementById("reg-email").value.trim(),
     whatsapp: document.getElementById("reg-whatsapp").value.trim(),
+    phone: document.getElementById("reg-phone")?.value.trim() || "",
+    payments: {
+      numerario: !!document.getElementById("reg-pay-numerario")?.checked,
+      multicaixa: !!document.getElementById("reg-pay-multicaixa")?.checked,
+      unitel: !!document.getElementById("reg-pay-unitel")?.checked,
+      other: document.getElementById("reg-pay-other")?.value.trim() || ""
+    },
     password: document.getElementById("reg-password").value,
     neighborhood: document.getElementById("reg-neighborhood").value.trim(),
     lat: parseFloat(document.getElementById("reg-lat").value),
@@ -300,6 +321,18 @@ function fillDash() {
   document.getElementById("dash-name").value = me.name || "";
   document.getElementById("dash-email").value = me.email || "";
   document.getElementById("dash-whatsapp").value = me.whatsapp || "";
+  const dashPhone = document.getElementById("dash-phone");
+  if (dashPhone) dashPhone.value = me.phone || "";
+  const pay = me.payments || {};
+  const setChk = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!val;
+  };
+  setChk("dash-pay-numerario", pay.numerario);
+  setChk("dash-pay-multicaixa", pay.multicaixa);
+  setChk("dash-pay-unitel", pay.unitel);
+  const other = document.getElementById("dash-pay-other");
+  if (other) other.value = pay.other || "";
   document.getElementById("dash-neighborhood").value = me.neighborhood || "";
   document.getElementById("dash-notes").value = me.notes || "";
   document.getElementById("dash-lat").value = me.lat ?? "";
@@ -335,6 +368,13 @@ async function saveMe(mode) {
     body.name = document.getElementById("dash-name").value.trim();
     body.email = document.getElementById("dash-email").value.trim();
     body.whatsapp = document.getElementById("dash-whatsapp").value.trim();
+    body.phone = document.getElementById("dash-phone")?.value.trim() || "";
+    body.payments = {
+      numerario: !!document.getElementById("dash-pay-numerario")?.checked,
+      multicaixa: !!document.getElementById("dash-pay-multicaixa")?.checked,
+      unitel: !!document.getElementById("dash-pay-unitel")?.checked,
+      other: document.getElementById("dash-pay-other")?.value.trim() || ""
+    };
     body.neighborhood = document.getElementById("dash-neighborhood").value.trim();
     body.notes = document.getElementById("dash-notes").value.trim();
     body.lat = parseFloat(document.getElementById("dash-lat").value);

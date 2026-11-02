@@ -25,7 +25,9 @@ const TEXT_FIELDS = [
   "labelPrice",
   "labelUpdated",
   "btnWhatsApp",
+  "btnCall",
   "btnReport",
+  "noContact",
   "waMessage",
   "reportMessage",
   "countFormat",
@@ -117,6 +119,9 @@ async function loadSellers() {
       if (data && data.texts && typeof data.texts === "object") {
         texts = { ...DEFAULT_TEXTS, ...data.texts };
       }
+      if (data && data.images && typeof data.images === "object") {
+        fillImagesForm(data.images);
+      }
     } else {
       throw new Error("HTTP " + res.status);
     }
@@ -165,7 +170,8 @@ async function saveTexts() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         password: ADMIN_PASSWORD,
-        texts
+        texts,
+        images: readImagesForm()
       })
     });
     if (!res.ok) throw new Error(await res.text());
@@ -351,7 +357,8 @@ async function publishCatalog() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         password: ADMIN_PASSWORD,
-        texts
+        texts,
+        images: readImagesForm()
       })
     });
     if (!res.ok) {
@@ -498,7 +505,8 @@ async function republishFromAccounts() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         password: ADMIN_PASSWORD,
-        texts: readTextsForm ? readTextsForm() : texts
+        texts: readTextsForm ? readTextsForm() : texts,
+        images: readImagesForm()
       })
     });
     if (!res.ok) throw new Error(await res.text());
@@ -506,6 +514,122 @@ async function republishFromAccounts() {
     document.getElementById("catalog-status").textContent =
       "Republicado a partir das contas (" + (data.count ?? "?") + " aprovados).";
     alert("Catálogo público actualizado.");
+  } catch (err) {
+    alert("Erro: " + err.message);
+  }
+}
+
+
+// ---------- Site images ----------
+function readImagesForm() {
+  return {
+    logoHeader: (document.getElementById("img-logoHeader")?.value || "").trim(),
+    logoDrawer: (document.getElementById("img-logoDrawer")?.value || "").trim(),
+    logoBrand: (document.getElementById("img-logoBrand")?.value || "").trim()
+  };
+}
+
+function fillImagesForm(images) {
+  const img = images || {};
+  const h = document.getElementById("img-logoHeader");
+  const d = document.getElementById("img-logoDrawer");
+  const b = document.getElementById("img-logoBrand");
+  if (h) h.value = img.logoHeader || "";
+  if (d) d.value = img.logoDrawer || "";
+  if (b) b.value = img.logoBrand || "";
+  const ph = document.getElementById("img-preview-header");
+  const pb = document.getElementById("img-preview-brand");
+  if (ph) ph.src = img.logoHeader || img.logoDrawer || "";
+  if (pb) pb.src = img.logoBrand || "";
+}
+
+async function saveImages() {
+  const images = readImagesForm();
+  try {
+    const res = await fetch(API_BASE + "/admin/republish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: ADMIN_PASSWORD,
+        texts: readTextsForm ? readTextsForm() : texts,
+        images
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    fillImagesForm(images);
+    document.getElementById("catalog-status").textContent =
+      "Imagens publicadas – " + new Date().toLocaleString("pt-AO");
+    alert("Imagens guardadas. O mapa público usa estes URLs.");
+  } catch (err) {
+    alert("Erro ao guardar imagens: " + (err.message || err));
+  }
+}
+
+// Load images when catalog loads
+const _origLoadCatalogAdmin = typeof loadCatalog === "function" ? loadCatalog : null;
+
+// ---------- Reports ----------
+async function loadReports() {
+  const container = document.getElementById("reports-list");
+  if (!container) return;
+  container.innerHTML = `<p class="text-muted text-sm">A carregar…</p>`;
+  try {
+    const res = await fetch(
+      API_BASE + "/admin/reports?password=" + encodeURIComponent(ADMIN_PASSWORD),
+      { cache: "no-store" }
+    );
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const list = data.reports || [];
+    if (!list.length) {
+      container.innerHTML = `<p class="text-muted text-sm">Nenhum relatório ainda.</p>`;
+      return;
+    }
+    container.innerHTML = list
+      .map((r) => {
+        const st = r.status || "open";
+        const when = r.createdAt
+          ? new Date(r.createdAt).toLocaleString("pt-AO")
+          : "";
+        const who = r.sellerName
+          ? escapeHtml(r.sellerName) + (r.sellerId ? " (" + escapeHtml(r.sellerId) + ")" : "")
+          : "Problema geral";
+        return `
+        <div class="seller-item">
+          <div class="info">
+            <div class="name">${who}</div>
+            <div class="meta">${when} · <span class="status-pill ${st === "open" ? "pending" : "approved"}">${st === "open" ? "Aberto" : "Resolvido"}</span></div>
+            <div class="text-sm" style="margin-top:6px;white-space:pre-wrap">${escapeHtml(r.message || "")}</div>
+            ${r.contact ? `<div class="text-sm text-muted">Contacto: ${escapeHtml(r.contact)}</div>` : ""}
+          </div>
+          <div class="actions">
+            ${
+              st === "open"
+                ? `<button type="button" title="Marcar resolvido" onclick="resolveReport('${r.id}','resolved')">✓</button>`
+                : `<button type="button" title="Reabrir" onclick="resolveReport('${r.id}','open')">↺</button>`
+            }
+            <button type="button" title="Apagar" onclick="resolveReport('${r.id}','delete')">🗑</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<p class="text-muted text-sm">Erro: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function resolveReport(id, action) {
+  try {
+    const body = { password: ADMIN_PASSWORD, id };
+    if (action === "delete") body.action = "delete";
+    else body.status = action;
+    const res = await fetch(API_BASE + "/admin/reports/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadReports();
   } catch (err) {
     alert("Erro: " + err.message);
   }

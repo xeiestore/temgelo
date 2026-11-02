@@ -46,8 +46,8 @@ function jsonError(msg, status) {
   return respond({ error: msg }, status);
 }
 
-/** Normalize Angolan WhatsApp: digits only, ensure starts with 244 (contact only, not login) */
-function normalizeWhatsApp(raw) {
+/** Normalize Angolan number: digits only, ensure starts with 244 (contact only, not login) */
+function normalizePhone(raw) {
   let d = String(raw || "").replace(/\D/g, "");
   if (!d) return "";
   if (d.startsWith("0") && d.length === 10) d = "244" + d.slice(1);
@@ -55,9 +55,20 @@ function normalizeWhatsApp(raw) {
   return d;
 }
 
+function normalizeWhatsApp(raw) {
+  return normalizePhone(raw);
+}
+
+/** WhatsApp: empty OK, or mobile 2449xxxxxxxx */
 function isValidWhatsApp(d) {
-  if (!d) return true; // optional
+  if (!d) return true; // optional – seller may hide contact
   return /^2449\d{8}$/.test(d);
+}
+
+/** Phone (call): empty OK, or any 244 + 9 digits (mobile or landline) */
+function isValidPhone(d) {
+  if (!d) return true; // optional
+  return /^244\d{9}$/.test(d);
 }
 
 function normalizeUsername(raw) {
@@ -176,6 +187,16 @@ async function uploadCatalog(env, catalog) {
   return true;
 }
 
+function normalizePayments(raw) {
+  const p = raw && typeof raw === "object" ? raw : {};
+  return {
+    numerario: !!p.numerario,
+    multicaixa: !!p.multicaixa,
+    unitel: !!p.unitel,
+    other: String(p.other || "").trim().slice(0, 80)
+  };
+}
+
 function publicSeller(s) {
   return {
     id: s.id,
@@ -186,7 +207,9 @@ function publicSeller(s) {
     buckets: Number(s.buckets) || 0,
     freeze: s.freeze || "muito_congelado",
     price: s.price || "",
-    whatsapp: s.whatsapp,
+    whatsapp: s.whatsapp || "",
+    phone: s.phone || "",
+    payments: normalizePayments(s.payments),
     neighborhood: s.neighborhood || "",
     notes: s.notes || "",
     updatedAt: s.updatedAt
@@ -232,6 +255,28 @@ async function loadSiteTexts(env) {
   }
 }
 
+async function loadSiteImages(env) {
+  const raw = await env.SELLERS.get("meta:images");
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+async function loadReportIndex(env) {
+  const raw = await env.SELLERS.get("meta:report_index");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
 async function rebuildPublicCatalog(env) {
   const ids = await getIndex(env);
   const sellers = [];
@@ -241,13 +286,14 @@ async function rebuildPublicCatalog(env) {
       sellers.push(publicSeller(s));
     }
   }
-  // Always re-attach durable site texts from KV so redeploys / seller
-  // updates never wipe custom copy published from Admin → Textos.
+  // Always re-attach durable site texts + images from KV
   const texts = await loadSiteTexts(env);
+  const images = await loadSiteImages(env);
   const catalog = {
     updatedAt: new Date().toISOString(),
     sellers,
-    texts
+    texts,
+    images
   };
   await uploadCatalog(env, catalog);
   return catalog;
@@ -293,9 +339,12 @@ export default {
           return respond("Invalid catalog", 400);
         }
 
-        // Persist site texts in KV (survives Worker / Pages redeploys)
+        // Persist site texts + images in KV (survives Worker / Pages redeploys)
         if (catalog.texts && typeof catalog.texts === "object") {
           await env.SELLERS.put("meta:texts", JSON.stringify(catalog.texts));
+        }
+        if (catalog.images && typeof catalog.images === "object") {
+          await env.SELLERS.put("meta:images", JSON.stringify(catalog.images));
         }
 
         const ids = await getIndex(env);
@@ -330,6 +379,7 @@ export default {
         const lat = parseFloat(body.lat);
         const lng = parseFloat(body.lng);
         const whatsapp = normalizeWhatsApp(body.whatsapp);
+        const phone = normalizePhone(body.phone);
 
         if (!isValidUsername(username)) {
           return jsonError(
@@ -347,7 +397,10 @@ export default {
           return jsonError("Nome, latitude e longitude são obrigatórios.", 400);
         }
         if (!isValidWhatsApp(whatsapp)) {
-          return jsonError("WhatsApp de contacto inválido. Use 2449… (opcional).", 400);
+          return jsonError("WhatsApp inválido. Use 2449… ou deixe vazio.", 400);
+        }
+        if (!isValidPhone(phone)) {
+          return jsonError("Telefone inválido. Use 244… ou deixe vazio.", 400);
         }
 
         if (await env.SELLERS.get("user:" + username)) {
@@ -365,6 +418,8 @@ export default {
           username,
           email: email || "",
           whatsapp: whatsapp || "",
+          phone: phone || "",
+          payments: normalizePayments(body.payments),
           passwordHash: hash,
           passwordSalt: salt,
           name,
@@ -474,9 +529,19 @@ export default {
         if (body.whatsapp != null) {
           const wa = normalizeWhatsApp(body.whatsapp);
           if (!isValidWhatsApp(wa)) {
-            return jsonError("WhatsApp de contacto inválido.", 400);
+            return jsonError("WhatsApp inválido. Use 2449… ou deixe vazio.", 400);
           }
           s.whatsapp = wa;
+        }
+        if (body.phone != null) {
+          const ph = normalizePhone(body.phone);
+          if (!isValidPhone(ph)) {
+            return jsonError("Telefone inválido. Use 244… ou deixe vazio.", 400);
+          }
+          s.phone = ph;
+        }
+        if (body.payments != null) {
+          s.payments = normalizePayments(body.payments);
         }
         if (body.email != null) {
           const em = normalizeEmail(body.email);
@@ -573,24 +638,101 @@ export default {
         if (body.texts && typeof body.texts === "object") {
           await env.SELLERS.put("meta:texts", JSON.stringify(body.texts));
         }
+        if (body.images && typeof body.images === "object") {
+          await env.SELLERS.put("meta:images", JSON.stringify(body.images));
+        }
         const catalog = await rebuildPublicCatalog(env);
         return respond({ ok: true, count: catalog.sellers.length });
+      }
+
+      // ---- Public user reports (not WhatsApp) ----
+      if (request.method === "POST" && path.endsWith("/report")) {
+        const body = await request.json().catch(() => ({}));
+        const message = String(body.message || "").trim();
+        if (message.length < 5) {
+          return jsonError("Escreva uma mensagem com pelo menos 5 caracteres.", 400);
+        }
+        if (message.length > 2000) {
+          return jsonError("Mensagem demasiado longa (máx. 2000).", 400);
+        }
+        const id = randomId("r");
+        const report = {
+          id,
+          sellerId: body.sellerId ? String(body.sellerId).slice(0, 40) : "",
+          sellerName: body.sellerName ? String(body.sellerName).slice(0, 80) : "",
+          message,
+          contact: body.contact ? String(body.contact).slice(0, 80) : "",
+          createdAt: new Date().toISOString(),
+          status: "open"
+        };
+        await env.SELLERS.put("report:" + id, JSON.stringify(report));
+        const idx = await loadReportIndex(env);
+        idx.unshift(id);
+        await env.SELLERS.put(
+          "meta:report_index",
+          JSON.stringify(idx.slice(0, 500))
+        );
+        return respond({ ok: true, id });
+      }
+
+      if (request.method === "GET" && path.endsWith("/admin/reports")) {
+        const password = url.searchParams.get("password") || "";
+        if (password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+        const idx = await loadReportIndex(env);
+        const reports = [];
+        for (const id of idx.slice(0, 100)) {
+          const raw = await env.SELLERS.get("report:" + id);
+          if (!raw) continue;
+          try {
+            reports.push(JSON.parse(raw));
+          } catch (_) {}
+        }
+        return respond({ reports });
+      }
+
+      if (request.method === "POST" && path.endsWith("/admin/reports/resolve")) {
+        const body = await request.json();
+        if (body.password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+        const id = String(body.id || "");
+        const raw = await env.SELLERS.get("report:" + id);
+        if (!raw) return jsonError("Relatório não encontrado.", 404);
+        let report;
+        try {
+          report = JSON.parse(raw);
+        } catch (_) {
+          return jsonError("Relatório inválido.", 400);
+        }
+        if (body.action === "delete") {
+          await env.SELLERS.delete("report:" + id);
+          const idx = (await loadReportIndex(env)).filter((x) => x !== id);
+          await env.SELLERS.put("meta:report_index", JSON.stringify(idx));
+          return respond({ ok: true, deleted: true });
+        }
+        report.status = body.status === "open" ? "open" : "resolved";
+        report.resolvedAt = new Date().toISOString();
+        await env.SELLERS.put("report:" + id, JSON.stringify(report));
+        return respond({ ok: true, status: report.status });
       }
 
       // ---- Public catalog (instant, no Cloudinary CDN lag) ----
       if (request.method === "GET" && path.endsWith("/catalog")) {
         const raw = await env.SELLERS.get("meta:public_catalog");
         const durableTexts = await loadSiteTexts(env);
+        const durableImages = await loadSiteImages(env);
         let catalog;
         if (!raw) {
-          catalog = { updatedAt: null, sellers: [], texts: durableTexts };
+          catalog = {
+            updatedAt: null,
+            sellers: [],
+            texts: durableTexts,
+            images: durableImages
+          };
         } else {
           try {
             catalog = JSON.parse(raw);
           } catch (_) {
-            catalog = { updatedAt: null, sellers: [], texts: {} };
+            catalog = { updatedAt: null, sellers: [], texts: {}, images: {} };
           }
-          // Heal missing/empty texts after redeploy or old catalog writes
           const hasTexts =
             catalog.texts &&
             typeof catalog.texts === "object" &&
@@ -598,9 +740,14 @@ export default {
           if (!hasTexts && Object.keys(durableTexts).length > 0) {
             catalog.texts = durableTexts;
           } else if (hasTexts && Object.keys(durableTexts).length > 0) {
-            // meta:texts is canonical; merge so newer admin edits win
             catalog.texts = { ...catalog.texts, ...durableTexts };
           }
+          catalog.images = {
+            ...(catalog.images && typeof catalog.images === "object"
+              ? catalog.images
+              : {}),
+            ...durableImages
+          };
         }
         return new Response(JSON.stringify(catalog), {
           status: 200,

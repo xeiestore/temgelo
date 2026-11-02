@@ -219,6 +219,34 @@ html, body {
   opacity: 0.9;
 }
 
+.btn-call {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: #0ea5e9;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.btn-call:active {
+  opacity: 0.9;
+}
+
+.popup-no-contact {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #94a3b8;
+  background: #1e293b;
+  border-radius: 8px;
+  text-align: center;
+}
+
 .btn-report {
   display: block;
   width: 100%;
@@ -1110,4 +1138,68 @@ html, body {
       display: block;
     }
   }
+}
+
+/* Report modal */
+.report-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.72);
+}
+.report-modal.hidden { display: none; }
+.report-modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.45);
+}
+.report-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.report-modal-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.report-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Payment tags on map popup */
+.popup-payments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.pay-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
 }
