@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Anuncie o seu negócio no Tem Gelo? — faixa de publicidade no mapa em Angola." />
+  <title>Anunciar no Tem Gelo?</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+</head>
+<body class="seller-body">
+  <header class="seller-topbar">
+    <a href="index.html" class="logo" aria-label="Tem Gelo?">
+      <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="36" />
+    </a>
+    <span class="seller-topbar-title">Anunciar</span>
+  </header>
+
+  <main class="seller-main">
+    <section class="seller-screen">
+      <div class="card seller-card">
+        <h2 style="margin-top:0">Quer anunciar no Tem Gelo?</h2>
+        <p class="text-sm text-muted mb-2">
+          A faixa no fundo do mapa é vista por quem procura gelo em Angola.
+          Preencha o formulário — a equipa recebe o pedido no painel de administração e entra em contacto.
+        </p>
+
+        <form id="ad-request-form" novalidate>
+          <h3 class="mt-2" style="font-size:1rem;margin-bottom:8px">1. Empresa / negócio</h3>
+          <div class="form-group">
+            <label for="ad-company">Nome da empresa ou marca *</label>
+            <input type="text" id="ad-company" required maxlength="120" placeholder="Ex.: Águas do Sul, Lda." />
+          </div>
+          <div class="form-group">
+            <label for="ad-type">Tipo de negócio *</label>
+            <select id="ad-type" required>
+              <option value="">Seleccione…</option>
+              <option value="loja">Loja / retalho</option>
+              <option value="distribuicao">Distribuição / fábrica de gelo</option>
+              <option value="restaurante">Restaurante / bar / hotel</option>
+              <option value="servicos">Serviços</option>
+              <option value="telecom">Telecom / fintech / apps</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ad-type-other">Se «Outro», descreva</label>
+            <input type="text" id="ad-type-other" maxlength="80" placeholder="Opcional" />
+          </div>
+          <div class="form-group">
+            <label for="ad-cities">Cidades / zonas onde quer aparecer *</label>
+            <input type="text" id="ad-cities" required maxlength="160" placeholder="Ex.: Luanda, Benguela, todo o país" />
+          </div>
+          <div class="form-group">
+            <label for="ad-website">Site ou redes sociais</label>
+            <input type="text" id="ad-website" maxlength="200" placeholder="Instagram, Facebook, site…" />
+          </div>
+
+          <h3 class="mt-2" style="font-size:1rem;margin-bottom:8px">2. Contacto</h3>
+          <div class="form-group">
+            <label for="ad-contact-name">Nome da pessoa de contacto *</label>
+            <input type="text" id="ad-contact-name" required maxlength="80" placeholder="Nome completo" />
+          </div>
+          <div class="form-group">
+            <label for="ad-role">Cargo / função</label>
+            <input type="text" id="ad-role" maxlength="80" placeholder="Ex.: Marketing, proprietário" />
+          </div>
+          <div class="form-group">
+            <label for="ad-whatsapp">WhatsApp (com código do país) *</label>
+            <input type="tel" id="ad-whatsapp" required maxlength="20" placeholder="2449xxxxxxxx" />
+          </div>
+          <div class="form-group">
+            <label for="ad-phone">Telefone alternativo</label>
+            <input type="tel" id="ad-phone" maxlength="20" placeholder="Opcional" />
+          </div>
+          <div class="form-group">
+            <label for="ad-email">Email *</label>
+            <input type="email" id="ad-email" required maxlength="120" placeholder="nome@empresa.ao" />
+          </div>
+          <div class="form-group">
+            <label for="ad-preferred">Preferência de contacto</label>
+            <select id="ad-preferred">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+              <option value="phone">Telefone</option>
+              <option value="any">Qualquer</option>
+            </select>
+          </div>
+
+          <h3 class="mt-2" style="font-size:1rem;margin-bottom:8px">3. Campanha</h3>
+          <div class="form-group">
+            <label for="ad-goal">O que quer anunciar / objectivo *</label>
+            <textarea id="ad-goal" required rows="3" maxlength="800" placeholder="Produto, promoção, marca, recrutamento…"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="ad-format">Formato pretendido</label>
+            <select id="ad-format">
+              <option value="banner">Faixa no fundo do mapa (banner)</option>
+              <option value="sponsored">Destaque / patrocinado</option>
+              <option value="unsure">Ainda não sei — quero proposta</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ad-duration">Duração pretendida</label>
+              <select id="ad-duration">
+                <option value="1w">1 semana</option>
+                <option value="2w">2 semanas</option>
+                <option value="1m">1 mês</option>
+                <option value="3m">3 meses</option>
+                <option value="ongoing">Contínuo / a combinar</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ad-budget">Orçamento aproximado (Kz)</label>
+              <input type="text" id="ad-budget" maxlength="40" placeholder="Ex.: 50.000 / a combinar" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="ad-start">Quando quer começar?</label>
+            <input type="text" id="ad-start" maxlength="80" placeholder="Ex.: já, ou data aproximada" />
+          </div>
+          <div class="form-group">
+            <label for="ad-creative">Tem logótipo ou arte pronta?</label>
+            <select id="ad-creative">
+              <option value="yes">Sim</option>
+              <option value="no">Não — precisam de ajuda</option>
+              <option value="partial">Parcial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ad-message">Mensagem extra / detalhes</label>
+            <textarea id="ad-message" rows="3" maxlength="1200" placeholder="Horários de contacto, links de drive, etc."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="ad-source">Como conheceu o Tem Gelo?</label>
+            <select id="ad-source">
+              <option value="app">Na app / mapa</option>
+              <option value="friend">Indicação</option>
+              <option value="social">Redes sociais</option>
+              <option value="search">Pesquisa</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block mt-2" id="ad-submit">Enviar pedido</button>
+          <p class="text-sm text-muted text-center mt-2" id="ad-form-status"></p>
+          <p class="text-sm text-center mt-1">
+            <a href="index.html" style="color:#93c5fd">← Voltar ao mapa</a>
+          </p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "https://tem-gelo-publish.xeieloja.workers.dev";
+
+    document.getElementById("ad-request-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const status = document.getElementById("ad-form-status");
+      const btn = document.getElementById("ad-submit");
+      const payload = {
+        company: document.getElementById("ad-company").value.trim(),
+        businessType: document.getElementById("ad-type").value,
+        businessTypeOther: document.getElementById("ad-type-other").value.trim(),
+        cities: document.getElementById("ad-cities").value.trim(),
+        website: document.getElementById("ad-website").value.trim(),
+        contactName: document.getElementById("ad-contact-name").value.trim(),
+        role: document.getElementById("ad-role").value.trim(),
+        whatsapp: document.getElementById("ad-whatsapp").value.trim(),
+        phone: document.getElementById("ad-phone").value.trim(),
+        email: document.getElementById("ad-email").value.trim(),
+        preferredContact: document.getElementById("ad-preferred").value,
+        goal: document.getElementById("ad-goal").value.trim(),
+        format: document.getElementById("ad-format").value,
+        duration: document.getElementById("ad-duration").value,
+        budget: document.getElementById("ad-budget").value.trim(),
+        startWhen: document.getElementById("ad-start").value.trim(),
+        creative: document.getElementById("ad-creative").value,
+        message: document.getElementById("ad-message").value.trim(),
+        source: document.getElementById("ad-source").value
+      };
+      if (!payload.company || !payload.businessType || !payload.cities || !payload.contactName || !payload.whatsapp || !payload.email || !payload.goal) {
+        status.textContent = "Preencha os campos obrigatórios (*).";
+        status.style.color = "#fca5a5";
+        return;
+      }
+      btn.disabled = true;
+      status.textContent = "A enviar…";
+      status.style.color = "#94a3b8";
+      try {
+        const res = await fetch(API_BASE + "/ad-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.statusText || "Erro");
+        status.textContent = "Pedido enviado. A equipa Tem Gelo? vai contactá-lo em breve.";
+        status.style.color = "#86efac";
+        e.target.reset();
+      } catch (err) {
+        status.textContent = "Erro: " + (err.message || "tente de novo");
+        status.style.color = "#fca5a5";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

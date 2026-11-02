@@ -825,3 +825,113 @@ async function resolveReport(id, action) {
     alert("Erro: " + err.message);
   }
 }
+
+// ---------- Ad requests ----------
+async function loadAdRequests() {
+  const container = document.getElementById("ad-requests-list");
+  if (!container) return;
+  container.innerHTML = `<p class="text-muted text-sm">A carregar…</p>`;
+  try {
+    const res = await fetch(
+      API_BASE + "/admin/ad-requests?password=" + encodeURIComponent(ADMIN_PASSWORD),
+      { cache: "no-store" }
+    );
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const list = data.requests || [];
+    if (!list.length) {
+      container.innerHTML = `<p class="text-muted text-sm">Nenhum pedido de anúncio ainda.</p>`;
+      return;
+    }
+    const typeLabel = {
+      loja: "Loja / retalho",
+      distribuicao: "Distribuição / fábrica",
+      restaurante: "Restaurante / bar / hotel",
+      servicos: "Serviços",
+      telecom: "Telecom / fintech",
+      outro: "Outro"
+    };
+    container.innerHTML = list
+      .map((r) => {
+        const st = r.status || "open";
+        const when = r.createdAt ? new Date(r.createdAt).toLocaleString("pt-AO") : "";
+        const type =
+          (typeLabel[r.businessType] || r.businessType || "—") +
+          (r.businessTypeOther ? " (" + escapeHtml(r.businessTypeOther) + ")" : "");
+        const wa = (r.whatsapp || "").replace(/\D/g, "");
+        const waLink = wa
+          ? `https://wa.me/${wa}?text=${encodeURIComponent(
+              "Olá " + (r.contactName || "") + ", vi o vosso pedido de anúncio no Tem Gelo?"
+            )}`
+          : "";
+        return `
+        <div class="seller-item" style="align-items:flex-start">
+          <div class="info" style="flex:1">
+            <div class="name">${escapeHtml(r.company || "—")}</div>
+            <div class="meta">${when} · <span class="status-pill ${
+              st === "open" ? "pending" : "approved"
+            }">${st === "open" ? "Aberto" : "Contactado / resolvido"}</span></div>
+            <div class="text-sm" style="margin-top:8px">
+              <strong>Contacto:</strong> ${escapeHtml(r.contactName || "—")}
+              ${r.role ? " (" + escapeHtml(r.role) + ")" : ""}<br/>
+              <strong>WhatsApp:</strong> ${
+                waLink
+                  ? `<a href="${waLink}" target="_blank" rel="noopener" style="color:#93c5fd">${escapeHtml(
+                      r.whatsapp
+                    )}</a>`
+                  : escapeHtml(r.whatsapp || "—")
+              }
+              ${r.phone ? " · Tel: " + escapeHtml(r.phone) : ""}<br/>
+              <strong>Email:</strong> <a href="mailto:${escapeHtml(
+                r.email || ""
+              )}" style="color:#93c5fd">${escapeHtml(r.email || "—")}</a>
+              · Prefere: ${escapeHtml(r.preferredContact || "—")}<br/>
+              <strong>Tipo:</strong> ${type}<br/>
+              <strong>Cidades:</strong> ${escapeHtml(r.cities || "—")}<br/>
+              ${r.website ? "<strong>Web:</strong> " + escapeHtml(r.website) + "<br/>" : ""}
+              <strong>Objectivo:</strong> ${escapeHtml(r.goal || "—")}<br/>
+              <strong>Formato:</strong> ${escapeHtml(r.format || "—")} ·
+              <strong>Duração:</strong> ${escapeHtml(r.duration || "—")} ·
+              <strong>Orçamento:</strong> ${escapeHtml(r.budget || "—")}<br/>
+              <strong>Início:</strong> ${escapeHtml(r.startWhen || "—")} ·
+              <strong>Arte:</strong> ${escapeHtml(r.creative || "—")}<br/>
+              ${
+                r.message
+                  ? `<span class="text-muted">Notas: ${escapeHtml(r.message)}</span><br/>`
+                  : ""
+              }
+              <span class="text-muted">Origem: ${escapeHtml(r.source || "—")}</span>
+            </div>
+          </div>
+          <div class="actions">
+            ${
+              st === "open"
+                ? `<button type="button" title="Marcar tratado" onclick="resolveAdRequest('${r.id}','resolved')">✓</button>`
+                : `<button type="button" title="Reabrir" onclick="resolveAdRequest('${r.id}','open')">↺</button>`
+            }
+            <button type="button" title="Apagar" onclick="resolveAdRequest('${r.id}','delete')">🗑</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<p class="text-muted text-sm">Erro: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function resolveAdRequest(id, action) {
+  try {
+    const body = { password: ADMIN_PASSWORD, id };
+    if (action === "delete") body.action = "delete";
+    else body.status = action;
+    const res = await fetch(API_BASE + "/admin/ad-requests/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    await loadAdRequests();
+  } catch (err) {
+    alert("Erro: " + err.message);
+  }
+}

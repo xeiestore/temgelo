@@ -216,26 +216,11 @@ function applyTexts() {
   }
   if (adCta) {
     adCta.textContent = texts.adCta || "Quero anunciar";
-    const wa = String(texts.adminWhatsApp || DEFAULT_TEXTS.adminWhatsApp || "")
-      .replace(/\D/g, "");
-    const msg = encodeURIComponent(
-      texts.adWaMessage ||
-        "Olá! Vi o espaço de anúncios no Tem Gelo? e quero anunciar o meu negócio/serviço."
-    );
-    if (wa && wa.length >= 11) {
-      adCta.href = "https://wa.me/" + wa + "?text=" + msg;
-      adCta.target = "_blank";
-      adCta.rel = "noopener";
-    } else {
-      adCta.href = "#";
-      adCta.removeAttribute("target");
-      adCta.onclick = (e) => {
-        e.preventDefault();
-        alert(
-          "Para anunciar neste espaço, contacte a equipa Tem Gelo? pelo WhatsApp indicado em Segurança / Admin."
-        );
-      };
-    }
+    // Ad requests → dedicated form → admin panel
+    adCta.href = "anunciar.html";
+    adCta.removeAttribute("target");
+    adCta.rel = "";
+    adCta.onclick = null;
   }
 }
 

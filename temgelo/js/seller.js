@@ -272,14 +272,14 @@ function renderDrawerNav() {
     nav.innerHTML = `
       <a href="#" class="drawer-link" data-action="stock">${iconStock} Meu stock</a>
       <a href="#" class="drawer-link" data-action="profile">${iconUser} Perfil</a>
-      <a href="./" class="drawer-link">${iconMap} Ver mapa público</a>
+      <a href="index.html" class="drawer-link" data-action="map">${iconMap} Ver mapa público</a>
       <a href="#" class="drawer-link drawer-link-danger" data-action="logout">${iconLogout} Sair</a>
     `;
   } else {
     nav.innerHTML = `
       <a href="#" class="drawer-link" data-action="login">Entrar</a>
       <a href="#" class="drawer-link" data-action="register">Criar conta</a>
-      <a href="./" class="drawer-link">${iconMap} Ver mapa público</a>
+      <a href="index.html" class="drawer-link" data-action="map">${iconMap} Ver mapa público</a>
     `;
   }
   nav.querySelectorAll("[data-action]").forEach((el) => {
@@ -288,6 +288,10 @@ function renderDrawerNav() {
       const a = el.getAttribute("data-action");
       window._closeDrawer?.();
       if (a === "logout") doLogout();
+      if (a === "map") {
+        window.location.href = "index.html";
+        return;
+      }
       if (a === "login") {
         showAuth();
         switchTab("login");

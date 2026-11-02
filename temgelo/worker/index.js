@@ -300,6 +300,17 @@ async function loadReportIndex(env) {
   }
 }
 
+async function loadAdRequestIndex(env) {
+  const raw = await env.SELLERS.get("meta:ad_request_index");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
 async function rebuildPublicCatalog(env) {
   const ids = await getIndex(env);
   const sellers = [];
@@ -967,6 +978,91 @@ export default {
         }
         const catalog = await rebuildPublicCatalog(env);
         return respond({ ok: true, count: catalog.sellers.length });
+      }
+
+      // ---- Public ad requests (land in admin panel) ----
+      if (request.method === "POST" && path.endsWith("/ad-request")) {
+        const body = await request.json().catch(() => ({}));
+        const company = String(body.company || "").trim().slice(0, 120);
+        const contactName = String(body.contactName || "").trim().slice(0, 80);
+        const whatsapp = String(body.whatsapp || "").replace(/\D/g, "").slice(0, 20);
+        const email = String(body.email || "").trim().toLowerCase().slice(0, 120);
+        const goal = String(body.goal || "").trim().slice(0, 800);
+        const cities = String(body.cities || "").trim().slice(0, 160);
+        const businessType = String(body.businessType || "").trim().slice(0, 40);
+        if (!company || !contactName || whatsapp.length < 9 || !email || !goal || !cities || !businessType) {
+          return jsonError("Preencha empresa, contacto, WhatsApp, email, cidades, tipo e objectivo.", 400);
+        }
+        if (!email.includes("@")) return jsonError("Email inválido.", 400);
+        const id = randomId("ad");
+        const req = {
+          id,
+          company,
+          businessType,
+          businessTypeOther: String(body.businessTypeOther || "").trim().slice(0, 80),
+          cities,
+          website: String(body.website || "").trim().slice(0, 200),
+          contactName,
+          role: String(body.role || "").trim().slice(0, 80),
+          whatsapp,
+          phone: String(body.phone || "").replace(/\D/g, "").slice(0, 20),
+          email,
+          preferredContact: String(body.preferredContact || "whatsapp").slice(0, 20),
+          goal,
+          format: String(body.format || "banner").slice(0, 30),
+          duration: String(body.duration || "").slice(0, 20),
+          budget: String(body.budget || "").trim().slice(0, 40),
+          startWhen: String(body.startWhen || "").trim().slice(0, 80),
+          creative: String(body.creative || "").slice(0, 20),
+          message: String(body.message || "").trim().slice(0, 1200),
+          source: String(body.source || "").slice(0, 30),
+          createdAt: new Date().toISOString(),
+          status: "open"
+        };
+        await env.SELLERS.put("ad_request:" + id, JSON.stringify(req));
+        const idx = await loadAdRequestIndex(env);
+        idx.unshift(id);
+        await env.SELLERS.put("meta:ad_request_index", JSON.stringify(idx.slice(0, 500)));
+        return respond({ ok: true, id });
+      }
+
+      if (request.method === "GET" && path.endsWith("/admin/ad-requests")) {
+        const password = url.searchParams.get("password") || "";
+        if (password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+        const idx = await loadAdRequestIndex(env);
+        const list = [];
+        for (const id of idx.slice(0, 100)) {
+          const raw = await env.SELLERS.get("ad_request:" + id);
+          if (!raw) continue;
+          try {
+            list.push(JSON.parse(raw));
+          } catch (_) {}
+        }
+        return respond({ requests: list });
+      }
+
+      if (request.method === "POST" && path.endsWith("/admin/ad-requests/resolve")) {
+        const body = await request.json();
+        if (body.password !== env.ADMIN_PASSWORD) return respond("Unauthorized", 401);
+        const id = String(body.id || "");
+        const raw = await env.SELLERS.get("ad_request:" + id);
+        if (!raw) return jsonError("Pedido não encontrado.", 404);
+        let item;
+        try {
+          item = JSON.parse(raw);
+        } catch (_) {
+          return jsonError("Pedido inválido.", 400);
+        }
+        if (body.action === "delete") {
+          await env.SELLERS.delete("ad_request:" + id);
+          const idx = (await loadAdRequestIndex(env)).filter((x) => x !== id);
+          await env.SELLERS.put("meta:ad_request_index", JSON.stringify(idx));
+          return respond({ ok: true, deleted: true });
+        }
+        item.status = body.status === "open" ? "open" : "resolved";
+        item.resolvedAt = new Date().toISOString();
+        await env.SELLERS.put("ad_request:" + id, JSON.stringify(item));
+        return respond({ ok: true, status: item.status });
       }
 
       // ---- Public user reports (not WhatsApp) ----

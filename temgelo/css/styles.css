@@ -1585,3 +1585,19 @@ html.seller-view-profile #section-stock {
   font-size: 0.95rem;
   color: #fecaca;
 }
+
+.seller-map-btn {
+  flex-shrink: 0;
+  padding: 6px 12px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700;
+  color: #93c5fd !important;
+  border: 1px solid #1e3a5f !important;
+  border-radius: 8px;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+.seller-map-btn:hover {
+  background: #1e293b !important;
+  color: #fff !important;
+}

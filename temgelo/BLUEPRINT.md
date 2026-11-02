@@ -165,6 +165,8 @@ Never commit the real password to a public repo.
 ## Safety + bottom ads
 - Red **safety banner** shows on map load, auto-hides after **10 seconds** (or on ×). Menu → Segurança shows it again temporarily.
 - After hide, the same bottom strip becomes the **partner ad** slot (`#ad-banner`).
+- Public form **`anunciar.html`** collects leads; stored in KV and listed under **Admin → Pedidos de anúncio**.
+- Map CTA «Quero anunciar» opens that form (not WhatsApp).
 - **Editable in Admin → Textos** (saved to KV `meta:texts` with **Guardar textos** / **Publicar**):
   - `adTitle`, `adBody`, `adCta`, `adWaMessage`
   - CTA opens WhatsApp using `adminWhatsApp` + `adWaMessage`

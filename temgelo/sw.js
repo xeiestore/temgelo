@@ -1,6 +1,6 @@
 // Tem Gelo? – Service Worker (basic offline shell)
 // Bump CACHE_NAME on every important static change so clients drop stale JS/CSS.
-const CACHE_NAME = "temgelo-v21";
+const CACHE_NAME = "temgelo-v23";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const ASSETS = [
   "./stock.html",
   "./profile.html",
   "./admin.html",
+  "./anunciar.html",
   "./css/styles.css",
   "./js/sellers.js",
   "./js/app.js",
