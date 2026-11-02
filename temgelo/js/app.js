@@ -1,17 +1,26 @@
 // Tem Gelo? – public map logic
 
-const CATALOG_URL = "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
+const CATALOG_URL =
+  "https://tem-gelo-publish.xeieloja.workers.dev/catalog";
+const CATALOG_FALLBACK =
+  "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
+const POLL_MS = 30000; // refresh map every 30s
 
 let sellers = [...DEFAULT_SELLERS];
 let texts = { ...DEFAULT_TEXTS };
 let map;
 let markersLayer;
+let lastCatalogAt = null;
 
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
   applyTexts();
   initMap();
   loadCatalog();
+  setInterval(loadCatalog, POLL_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") loadCatalog();
+  });
 });
 
 function initMap() {
@@ -32,25 +41,51 @@ function initMap() {
 }
 
 // ---------- Load live catalog ----------
+async function fetchCatalogJson(url) {
+  const res = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now(), {
+    cache: "no-store",
+    headers: { Accept: "application/json" }
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
 async function loadCatalog() {
+  let data = null;
   try {
-    const res = await fetch(CATALOG_URL + "?t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    if (data && Array.isArray(data.sellers)) {
+    data = await fetchCatalogJson(CATALOG_URL);
+  } catch (err) {
+    console.warn("Worker catalog failed, trying Cloudinary:", err.message);
+    try {
+      data = await fetchCatalogJson(CATALOG_FALLBACK);
+    } catch (err2) {
+      console.warn("Using default sellers:", err2.message);
+    }
+  }
+
+  if (data) {
+    // Skip re-render if nothing changed
+    const stamp = data.updatedAt || JSON.stringify(data.sellers || []).slice(0, 200);
+    if (stamp === lastCatalogAt) return;
+    lastCatalogAt = stamp;
+
+    if (Array.isArray(data.sellers)) {
       sellers = data.sellers;
       console.log("Catalog loaded:", sellers.length, "sellers");
     }
-    if (data && data.texts && typeof data.texts === "object") {
+    if (data.texts && typeof data.texts === "object") {
       texts = { ...DEFAULT_TEXTS, ...data.texts };
     }
-  } catch (err) {
-    console.warn("Using default sellers (catalog not available yet):", err.message);
   }
+
   applyTexts();
   renderMarkers();
-  fitToSellers();
   updateCount();
+  // Only fit bounds on first successful load
+  if (!loadCatalog._fitted && sellers.length) {
+    fitToSellers();
+    loadCatalog._fitted = true;
+  }
 }
 
 function fitToSellers() {

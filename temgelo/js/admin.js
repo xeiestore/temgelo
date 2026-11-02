@@ -1,7 +1,9 @@
 // Tem Gelo? – Admin logic
 
 const ADMIN_PASSWORD = "EuRico2027"; // Must match the Worker secret ADMIN_PASSWORD
-const CATALOG_URL = "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
+const CATALOG_URL = "https://tem-gelo-publish.xeieloja.workers.dev/catalog";
+const CATALOG_FALLBACK =
+  "https://res.cloudinary.com/efvlvhce/raw/upload/gelo/catalog.json";
 const PUBLISH_URL = "https://tem-gelo-publish.xeieloja.workers.dev/publish";
 
 let sellers = [];
@@ -98,9 +100,12 @@ async function loadSellers() {
     if (localTexts) texts = { ...DEFAULT_TEXTS, ...JSON.parse(localTexts) };
   } catch (_) {}
 
-  // 2. Try live catalog
+  // 2. Try live catalog (Worker first – instant after publish)
   try {
-    const res = await fetch(CATALOG_URL + "?t=" + Date.now(), { cache: "no-store" });
+    let res = await fetch(CATALOG_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) {
+      res = await fetch(CATALOG_FALLBACK + "?t=" + Date.now(), { cache: "no-store" });
+    }
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.sellers)) {

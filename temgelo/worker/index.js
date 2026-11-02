@@ -11,6 +11,7 @@
  *   GET  /admin/sellers    – list all accounts (admin password)
  *   POST /admin/moderate   – approve | ban | delete seller
  *   POST /admin/republish  – rebuild public catalog from approved sellers
+ *   GET  /catalog         – public catalog (KV, no CDN cache)
  *
  * Secrets:
  *   ADMIN_PASSWORD, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
@@ -139,9 +140,14 @@ async function signCloudinary(paramsToSign, apiSecret) {
 }
 
 async function uploadCatalog(env, catalog) {
+  // 1) Instant source of truth for the public map (no CDN delay)
+  await env.SELLERS.put("meta:public_catalog", JSON.stringify(catalog));
+
+  // 2) Cloudinary backup + invalidate CDN cache so old URL also updates faster
   const timestamp = Math.floor(Date.now() / 1000);
   const publicId = "gelo/catalog";
-  const paramsToSign = `overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
+  // sign must include every param we send except file, api_key, resource_type
+  const paramsToSign = `invalidate=true&overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
   const signature = await signCloudinary(paramsToSign, env.CLOUDINARY_API_SECRET);
 
   const form = new FormData();
@@ -155,6 +161,7 @@ async function uploadCatalog(env, catalog) {
   form.append("signature", signature);
   form.append("public_id", publicId);
   form.append("overwrite", "true");
+  form.append("invalidate", "true");
   form.append("resource_type", "raw");
 
   const cloudRes = await fetch(
@@ -163,7 +170,8 @@ async function uploadCatalog(env, catalog) {
   );
   if (!cloudRes.ok) {
     const errText = await cloudRes.text();
-    throw new Error("Cloudinary: " + errText.slice(0, 300));
+    // KV already updated – map can still read /catalog; log Cloudinary issue
+    console.error("Cloudinary: " + errText.slice(0, 300));
   }
   return true;
 }
@@ -538,6 +546,33 @@ export default {
         }
         const catalog = await rebuildPublicCatalog(env);
         return respond({ ok: true, count: catalog.sellers.length });
+      }
+
+      // ---- Public catalog (instant, no Cloudinary CDN lag) ----
+      if (request.method === "GET" && path.endsWith("/catalog")) {
+        const raw = await env.SELLERS.get("meta:public_catalog");
+        if (!raw) {
+          // Fallback empty shell
+          return new Response(
+            JSON.stringify({ updatedAt: null, sellers: [], texts: {} }),
+            {
+              status: 200,
+              headers: {
+                ...CORS,
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+              }
+            }
+          );
+        }
+        return new Response(raw, {
+          status: 200,
+          headers: {
+            ...CORS,
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+          }
+        });
       }
 
       return respond("Not found", 404);

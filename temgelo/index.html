@@ -30,7 +30,7 @@
     <button type="button" class="hamburger-btn topbar-hamburger" id="public-hamburger" aria-label="Menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
-    <a href="./" class="logo" aria-label="Tem Gelo?">
+    <a href="/index.html" class="logo" id="home-logo" aria-label="Tem Gelo? – início">
       <img src="images/logo-header-dark.png" alt="Tem Gelo?" height="40" style="height:40px;width:auto;display:block;" />
     </a>
     <div class="badge" id="seller-count">— vendedores</div>
@@ -75,11 +75,33 @@
     // Register service worker for installable / offline support
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch((err) => {
+        navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((reg) => {
+          reg.update().catch(() => {});
+        }).catch((err) => {
           console.warn("SW registration failed:", err);
         });
       });
     }
+
+    // Logo: always land on the public map (with hamburger), never a bare URL without UI
+    document.getElementById("home-logo")?.addEventListener("click", (e) => {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      const onHome =
+        path === "" ||
+        path === "/" ||
+        path.endsWith("/index.html") ||
+        path.endsWith("/index");
+      if (onHome) {
+        e.preventDefault();
+        // Reset map view if available
+        if (typeof map !== "undefined" && map) {
+          try {
+            map.setView([-11.2, 17.5], 6);
+          } catch (_) {}
+        }
+        window.scrollTo(0, 0);
+      }
+    });
 
     // Public hamburger menu (guest vs logged-in seller)
     (function () {
